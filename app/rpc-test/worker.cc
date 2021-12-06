@@ -7,7 +7,7 @@
 #include <papi.h>
 
 #define MEASURE_LATENCY 1
-
+#define fpu_not_preserved 1
 /* Shared structures between master and slave coroutines */
 __thread int wrkr_gid;	/* Global ID of this worker */
 __thread int wrkr_lid;	/* Local ID of this worker */
