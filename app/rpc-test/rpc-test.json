@@ -2,7 +2,7 @@
   "rpc_test": {
 	"num_coro": 21,
 	"base_port_index": 0,
-	"num_ports": 2,
+	"num_ports": 1,
 	"num_qps": 1,
 	"postlist": 16,
 	"numa_node": 0,
