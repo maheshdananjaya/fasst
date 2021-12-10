@@ -9,11 +9,11 @@ cd ${EXEC_FOLDER}
 
 # get Hosts
 source ./hosts.sh
-
+echo ${REMOTE_HOSTS}
 #../bin/copy-exec-files.sh
-                       ./run-app.sh ${args} &
-                 sleep 2 # give some leeway so that manager starts before executing the members
-	             parallel "echo running | ssh -tt {} $'${REMOTE_COMMAND}'" ::: $(echo ${REMOTE_HOSTS[@]}) >/dev/null
+bash run-app.sh
+sleep 2 # give some leeway so that manager starts before executing the members
+parallel "echo running | ssh -tt {} $'${REMOTE_COMMAND}'" ::: $(echo ${REMOTE_HOSTS[@]}) >/dev/null
 cd - >/dev/null
 
 #../bin/get-system-xput-files.sh
