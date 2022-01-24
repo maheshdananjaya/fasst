@@ -562,9 +562,9 @@ void slave_func(coro_yield_t &yield, int coro_id)
 	clock_gettime(CLOCK_REALTIME, &msr_start);
 
 	while(1) {
-#if TATP_COLLECT_STATS == 1
-		clock_gettime(CLOCK_REALTIME, &tx_start_time);
-#endif
+		#if TATP_COLLECT_STATS == 1
+			clock_gettime(CLOCK_REALTIME, &tx_start_time);
+		#endif
 		tatp_txn_type_t txn_type = workgen_arr[hrd_fastrand(&tg_seed) % 100];
 		stat_tx_attempted_tot++;
 		tatp_stat_inc(stat_tx_attempted[static_cast<int>(txn_type)], 1);

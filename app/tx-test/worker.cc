@@ -518,7 +518,7 @@ void run_thread(struct thread_params *params)
 			printf("Worker %d: Populating FixedTable. Total swarm keys = %lu\n",
 				wrkr_gid, num_keys_global);
 			ds_fixedtable_populate(params->fixedtable[repl_i],
-				num_keys_global, val_size, mappings, repl_i,
+				num_keys_global, val_size, mappings, repl_i,                                                                                                                                                                                                                                 
 				wrkr_gid,	/* = partition ID */
 				true);	/* Only add keys that belong to this partition */
 		}
