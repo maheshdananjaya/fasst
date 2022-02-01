@@ -370,7 +370,7 @@ coro_id_t* Rpc::poll_comps()
 			 /* YALA only single respose is enough 
 			    hots_mbuf_t *resp_mbuf = start_new_resp(_mchn_id, 1,
 				wc_imm.int_rep);
-		    /*		
+		    */	
 
 			/* Process the requests */
 			size_t wc_off = 0;	/* Offset into wc_buf */
@@ -446,7 +446,7 @@ coro_id_t* Rpc::poll_comps()
 
 
 			//we can do comit validate and a;l the steps here. 
-			//careful with memory access timing for locking and validate. becuase its not synchronous in ASICS. \
+			//careful with memory access timing for locking and validate. becuase its not synchronous in ASICS. 
 
 		}
 	}
