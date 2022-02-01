@@ -76,7 +76,7 @@ public:
 		 * Lower-order keyhash bits are used to map to buckets. @keyhash has
 		 * at least 48 useful bits, so shifting by 32 is OK.
 		 */
-		return total_primary_client_machine + ((keyhash >> 32) % tot_primary_memory_machines);
+		return tot_primary_client_machine + ((keyhash >> 32) % tot_primary_memory_machines);
 	}
 
 	/* Get the backup machine with index @back_i (0-based) for this primary */
