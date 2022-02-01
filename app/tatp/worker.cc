@@ -755,7 +755,7 @@ void run_thread(struct thread_params *params)
 
 	printf("Worker %d: populating TATP tables.\n", wrkr_gid);
 	
-	if(wrkr_gid%num_machine == num_machine-1)
+	if(wrkr_gid%num_machines == num_machines-1)
 	{
 		tatp->populate_all_tables_barrier(mappings);	
 	}
