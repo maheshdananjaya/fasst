@@ -367,9 +367,16 @@ coro_id_t* Rpc::poll_comps()
 			hots_mbuf_t *resp_mbuf = start_new_resp(_mchn_id, _num_reqs,
 				wc_imm.int_rep); /* Converts req Imm to response Imm */
 
+			 /* YALA only single respose is enough 
+			    hots_mbuf_t *resp_mbuf = start_new_resp(_mchn_id, 1,
+				wc_imm.int_rep);
+		    /*		
+
 			/* Process the requests */
 			size_t wc_off = 0;	/* Offset into wc_buf */
 			rpc_cmsg_reqhdr_t *cmsg_reqhdr;
+
+			//YALA: need to get all the requests and create eadste and writset.
 
 			for(int i = 0; i < (int) _num_reqs; i++) {
 				rpc_dassert(is_aligned(wc_off, sizeof(rpc_cmsg_reqhdr_t)));
@@ -388,19 +395,43 @@ coro_id_t* Rpc::poll_comps()
 					rpc_type_to_string(cmsg_reqhdr->req_type).c_str(),
 					_mchn_id, cmsg_reqhdr->size, wc_len, (int) _num_reqs);
 
+
+				// YALA only the first or the last message of the batch need to be attached with the respose.
+				// make sure that only one transaction from one machine is processed at one. batch can consis tof multiple batches. highly unlikely?.
+
 				/* Copy the request header to the response */
 				rpc_cmsg_reqhdr_t *cmsg_resphdr = (rpc_cmsg_reqhdr_t *)
 					resp_mbuf->cur_buf;
-				*((uint64_t *) cmsg_resphdr) = *(uint64_t *) cmsg_reqhdr;
+				*((uint64_t *) cmsg_resphdr) = *(uint64_t *) cmsg_reqhdr; //copy
 				resp_mbuf->cur_buf += sizeof(rpc_cmsg_reqhdr_t);
 				wc_off += sizeof(rpc_cmsg_reqhdr_t);
 
+				//YALA
+				/*recreate the read-set and write-set*/
+
+				/*invoke a handler for the transaction which does the two phase locking. 
+				(logging and replication can be used in case memory fails fully or partially. for fully failure logless protocols can be used)*/
+    			
+    			//change the RPC layer to send and proecss transaction as a whole
+
+    			//send a number of items in the transactions to here and then we can chekc if all the keys have arrived.
+    			// 
+
 				/* Invoke the handler */
 				rpc_dassert(rpc_handler[req_type] != NULL);
+
+				//YALA only need to get the respose and accumulate them. slave coroutines on the memory side can be used. 
+				//single master may not enough.
+
+				//call the new handler, pass a vector.
+
 				size_t resp_len = rpc_handler[req_type](
 					resp_mbuf->cur_buf, &cmsg_resphdr->resp_type,
-					&wc_buf[wc_off], req_len, rpc_handler_arg[req_type]);
+					&wc_buf[wc_off], req_len, rpc_handler_arg[req_type]); // 
+
 				cmsg_resphdr->size = resp_len;	/* cmsg_resphdr is valid */
+                
+				//YALA - iterate over .we can send the respose to the first or the last request of the packet
 
 				rpc_dassert(is_aligned(resp_len, sizeof(uint64_t)));
 
@@ -412,6 +443,11 @@ coro_id_t* Rpc::poll_comps()
 			}
 
 			rpc_dassert(wc_off == wc_len);
+
+
+			//we can do comit validate and a;l the steps here. 
+			//careful with memory access timing for locking and validate. becuase its not synchronous in ASICS. \
+
 		}
 	}
 

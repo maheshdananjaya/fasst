@@ -23,6 +23,10 @@ public:
 	int num_replicas;	/* 1 + num_backups */
 	int tot_primary_workers; /* Total non-lockserver workers in the swarm */
 	int tot_primary_machines;	/* Total non-lockserver machines in the swarm */
+
+	int tot_primary_client_machines;
+	int tot_primary_memory_machines;
+	
 	int base_lockserver_wn;
 	bool am_i_lock_server;
 
@@ -55,6 +59,8 @@ public:
 			base_lockserver_wn = workers_per_machine * (num_machines - 1);
 		} else {
 			tot_primary_machines = num_machines;
+			tot_primary_client_machines = num_machines -1;
+			tot_primary_memory_machines = 1;
 			base_lockserver_wn = INT_MIN;
 		}
 
@@ -70,7 +76,7 @@ public:
 		 * Lower-order keyhash bits are used to map to buckets. @keyhash has
 		 * at least 48 useful bits, so shifting by 32 is OK.
 		 */
-		return ((keyhash >> 32) % tot_primary_machines);
+		return total_primary_client_machine + ((keyhash >> 32) % tot_primary_memory_machines);
 	}
 
 	/* Get the backup machine with index @back_i (0-based) for this primary */

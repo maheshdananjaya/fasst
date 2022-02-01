@@ -57,6 +57,21 @@ forceinline void Tx::send_updates_to_replicas(coro_yield_t &yield,
 	}
 }
 
+
+// commit must be changed to perform locking, validation, loigging and commir
+// validation for read only transaction must be chnaged to to do the locking on the memory side.
+//change the locking step to be a seperate round trip tfrom the execution.
+
+forceinline tx_status_t Tx::delegate(coro_yield_t &yield){
+
+ //for read only transactions both reading and validation are done on the memory side
+
+// for read write transactions, all the steps are delegated ot the memory side
+
+	//1. send the red set and write set 
+
+  
+}
 /* Run the commit phase of this transaction */
 forceinline tx_status_t Tx::commit(coro_yield_t &yield)
 {

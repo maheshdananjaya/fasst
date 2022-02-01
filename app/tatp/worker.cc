@@ -752,8 +752,15 @@ void run_thread(struct thread_params *params)
 	 * the thread that populates a key may be different from the thread that
 	 * is responsible for serving the key at run time.
 	 */
+
 	printf("Worker %d: populating TATP tables.\n", wrkr_gid);
-	tatp->populate_all_tables_barrier(mappings);
+	
+	if(wrkr_gid%num_machine == num_machine-1)
+	{
+		tatp->populate_all_tables_barrier(mappings);	
+	}
+	//tatp->populate_all_tables_barrier(mappings);
+	
 	workgen_arr = tatp->create_workgen_array();
 	hrd_red_printf("Worker %d: populated all tables\n", wrkr_gid);
 
