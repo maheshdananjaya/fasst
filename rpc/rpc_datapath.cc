@@ -82,7 +82,7 @@ int Rpc::send_reqs(int coro_id)
 			/* XXX: Should we calculate post_send() postlist stats here */
 		}
 	}
-	
+
 	return 0;	/* Success, even though we don't have a fail case */
 }
 
@@ -90,7 +90,7 @@ int Rpc::send_reqs(int coro_id)
  * Send a batch of >= 0 responses. Return 0 on success.
  * Unlike send_reqs(), @batch can contain multiple responses to the same remote
  * worker (but to different coroutines at that worker).
- * 
+ *
  * Immediate formatting: Copies the request immediate to response immediate, but
  * changes its type to the corresponding response type.
  */
@@ -130,7 +130,7 @@ int Rpc::send_resps()
 		rpc_dassert(send_sgl[wr_i].length <= info.max_pkt_size);
 
 		send_wr[wr_i].send_flags = set_flags(active_qp, send_sgl[wr_i].length);
-		
+
 		if(send_sgl[wr_i].length > HRD_MAX_INLINE) {
 			rpc_dprintf("Worker %d: Response too large. Using non-inline buf\n",
 				info.wrkr_gid);
@@ -154,20 +154,20 @@ int Rpc::send_resps()
 		if(wr_i == info.postlist || resp_i == num_cresps - 1) {
 			rpc_dassert(wr_i > 0); /* If not, how did we get here? */
 			send_wr[wr_i - 1].next = NULL;
-			
+
 			int ret = ibv_post_send(cb->dgram_qp[active_qp],
 				&send_wr[0], &bad_wr);
 			rpc_dassert_msg(ret == 0, "Rpc: ibv_post_send error\n");
 
 			rpc_stat_inc(stat_resp_post_send_calls, 1);
-	
+
 			/* Reset */
 			send_wr[wr_i - 1].next = &send_wr[wr_i]; /* Restore chain; safe */
 			wr_i = 0;
 			HRD_MOD_ADD(active_qp, info.num_qps);
 		}
 	}
-	
+
 	return 0;	/* Success, even though we don't have a fail case */
 }
 
@@ -176,7 +176,7 @@ void Rpc::ld_check_packet_loss()
 	struct timespec ld_end;
 
 	clock_gettime(CLOCK_REALTIME, &ld_end);
-	double ms = (ld_end.tv_sec - ld_stopwatch.tv_sec) * 1000 + 
+	double ms = (ld_end.tv_sec - ld_stopwatch.tv_sec) * 1000 +
 		(double) (ld_end.tv_nsec - ld_stopwatch.tv_nsec) / 1000000;
 
 	if(ms >= RPC_LOSS_DETECTION_MS) {
@@ -231,7 +231,7 @@ coro_id_t* Rpc::poll_comps()
 		ld_check_packet_loss();
 		ld_iters = 0;
 	}
-	
+
 	/* Poll for completions */
 	long long poll_recv_cq_start = rpc_get_cycles();
 	int cq_comps = ibv_poll_cq(cb->dgram_recv_cq[0], HRD_RQ_DEPTH, wc);
@@ -241,6 +241,7 @@ coro_id_t* Rpc::poll_comps()
 		rpc_stat_inc(stat_wasted_poll_cq, 1);
 
 		/* Return a loop with only the master coroutine */
+		rpc_dprintf("Rpc: Return the master coroutine. nothing received");
 		next_coro[RPC_MASTER_CORO_ID] = RPC_MASTER_CORO_ID;
 		return next_coro;
 	}
@@ -367,10 +368,10 @@ coro_id_t* Rpc::poll_comps()
 			hots_mbuf_t *resp_mbuf = start_new_resp(_mchn_id, _num_reqs,
 				wc_imm.int_rep); /* Converts req Imm to response Imm */
 
-			 /* YALA only single respose is enough 
+			 /* YALA only single respose is enough
 			    hots_mbuf_t *resp_mbuf = start_new_resp(_mchn_id, 1,
 				wc_imm.int_rep);
-		    */	
+		    */
 
 			/* Process the requests */
 			size_t wc_off = 0;	/* Offset into wc_buf */
@@ -409,35 +410,35 @@ coro_id_t* Rpc::poll_comps()
 				//YALA
 				/*recreate the read-set and write-set*/
 
-				/*invoke a handler for the transaction which does the two phase locking. 
+				/*invoke a handler for the transaction which does the two phase locking.
 				(logging and replication can be used in case memory fails fully or partially. for fully failure logless protocols can be used)*/
-    			
+
     			//change the RPC layer to send and proecss transaction as a whole
 
     			//send a number of items in the transactions to here and then we can chekc if all the keys have arrived.
-    			// 
+    			//
 
 				/* Invoke the handler */
 				rpc_dassert(rpc_handler[req_type] != NULL);
 
-				//YALA only need to get the respose and accumulate them. slave coroutines on the memory side can be used. 
+				//YALA only need to get the respose and accumulate them. slave coroutines on the memory side can be used.
 				//single master may not enough.
 
 				//call the new handler, pass a vector.
 
 				size_t resp_len = rpc_handler[req_type](
 					resp_mbuf->cur_buf, &cmsg_resphdr->resp_type,
-					&wc_buf[wc_off], req_len, rpc_handler_arg[req_type]); // 
+					&wc_buf[wc_off], req_len, rpc_handler_arg[req_type]); //
 
 				cmsg_resphdr->size = resp_len;	/* cmsg_resphdr is valid */
-                
+
 				//YALA - iterate over .we can send the respose to the first or the last request of the packet
 
 				rpc_dassert(is_aligned(resp_len, sizeof(uint64_t)));
 
 				wc_off += req_len;
 				resp_mbuf->cur_buf += resp_len;
-				
+
 				/* Ensure that we don't overflow the response buffer */
 				rpc_dassert(resp_mbuf->length() <= resp_mbuf->alloc_len);
 			}
@@ -445,8 +446,8 @@ coro_id_t* Rpc::poll_comps()
 			rpc_dassert(wc_off == wc_len);
 
 
-			//we can do comit validate and a;l the steps here. 
-			//careful with memory access timing for locking and validate. becuase its not synchronous in ASICS. 
+			//we can do comit validate and a;l the steps here.
+			//careful with memory access timing for locking and validate. becuase its not synchronous in ASICS.
 
 		}
 	}

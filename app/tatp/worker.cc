@@ -90,7 +90,11 @@ void master_func(coro_yield_t &yield, int coro_id)
 		next_coro[coro_i] = (coro_i == num_coro - 1) ? 0 : coro_i + 1;
 	}
 
-	yield(coro_arr[1]);
+	if(wrkr_gid/workers_per_machine != num_machines-1)
+	{
+			yield(coro_arr[1]);
+	}
+	//yield(coro_arr[1]);
 
 	while(1) {
 		next_coro = rpc->poll_comps();
@@ -694,10 +698,10 @@ void slave_func(coro_yield_t &yield, int coro_id)
 			latency->reset();
 		}
     //run the while loop for once.
-		if(wrkr_gid/workers_per_machine == num_machines-1)
-		{
-		  	break;
-	  }
+		//if(wrkr_gid/workers_per_machine == num_machines-1)
+		//{
+		//  	break;
+	  //}
 	}
 }
 
