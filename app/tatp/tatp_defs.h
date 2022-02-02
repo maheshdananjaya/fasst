@@ -36,7 +36,7 @@
 #define FREQUENCY_DELETE_CALL_FORWARDING     2    // Multi
 
 //#define SUBSCRIBERS_PER_MACHINE 1000000	/* 1 million subscribers per machine */
-#define SUBSCRIBERS_PER_MACHINE 100000	/* 1 million subscribers per machine */
+#define SUBSCRIBERS_PER_MACHINE 1000000	/* 1 million subscribers per machine */
 
 /* SHM keys for tables: (f + 1) keys per table at every machine */
 #define SUBSCRIBER_BASE_SHM_KEY 2000
