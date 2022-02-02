@@ -694,7 +694,10 @@ void slave_func(coro_yield_t &yield, int coro_id)
 			latency->reset();
 		}
     //run the while loop for once.
-		break;
+		if(wrkr_gid/workers_per_machine == num_machines-1)
+		{
+		  	break;
+	  }
 	}
 }
 
