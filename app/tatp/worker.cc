@@ -753,10 +753,11 @@ void run_thread(struct thread_params *params)
 	 * is responsible for serving the key at run time.
 	 */
 
-	printf("Worker %d: populating TATP tables.\n", wrkr_gid);
+	//printf("Worker %d: populating TATP tables.\n", wrkr_gid);
 	
-	if(wrkr_gid%num_machines == num_machines-1)
+	if(wrkr_gid/workers_per_machine == num_machines-1)
 	{
+		printf("Worker %d: populating TATP tables.\n", wrkr_gid);
 		tatp->populate_all_tables_barrier(mappings);	
 	}
 	//tatp->populate_all_tables_barrier(mappings);
