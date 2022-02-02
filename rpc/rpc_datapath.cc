@@ -241,7 +241,7 @@ coro_id_t* Rpc::poll_comps()
 		rpc_stat_inc(stat_wasted_poll_cq, 1);
 
 		/* Return a loop with only the master coroutine */
-		rpc_dprintf("Rpc: Return the master coroutine. nothing received");
+		//rpc_dprintf("Rpc: Return the master coroutine. nothing received");
 		next_coro[RPC_MASTER_CORO_ID] = RPC_MASTER_CORO_ID;
 		return next_coro;
 	}
