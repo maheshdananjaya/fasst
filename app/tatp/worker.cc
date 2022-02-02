@@ -292,7 +292,7 @@ bool txn_update_subscriber_data(coro_yield_t &yield, int coro_id, Tx *tx)
 
 	tx->add_to_write_set(RPC_SPECIAL_FACILITY_REQ,
 		specfac_key.hots_key, &specfac_obj, tx_write_mode_t::update);
-	
+
 	tx_status_t ex_result = tx->do_read(yield);
 	tatp_dassert(ex_result == tx_status_t::in_progress ||
 		ex_result == tx_status_t::must_abort);	/* Locked or not found */
@@ -313,7 +313,7 @@ bool txn_update_subscriber_data(coro_yield_t &yield, int coro_id, Tx *tx)
 
 	tatp_stat_inc(stat_tx_commit_attempted[txn_type], 1);
 	tx_status_t commit_status = tx->commit(yield); _unused(commit_status);
-	
+
 	/*
 	 * If we managed to lock the SUBSCRIBER and SPECIAL_FACILTY record, the
 	 * txn must commit.
@@ -368,10 +368,10 @@ bool txn_update_location(coro_yield_t &yield, int coro_id, Tx *tx)
 		tatp_sub_val_t *sub_val = (tatp_sub_val_t *) sub_obj.val;
 		tatp_dassert(sub_val->msc_location == tatp_sub_msc_location_magic);
 		sub_val->vlr_location = vlr_location;	/* Update */
-			
+
 		tatp_stat_inc(stat_tx_commit_attempted[txn_type], 1);
 		tx_status_t commit_status = tx->commit(yield); _unused(commit_status);
-	
+
 		/*
 		 * If we managed to lock the SUBSCRIBER record, the txn must commit.
 		 * (Validation must succeed because the secondary table is read-only.)
@@ -445,7 +445,7 @@ bool txn_insert_call_forwarding(coro_yield_t &yield, int coro_id, Tx *tx)
 	callfwd_key.start_time = start_time;
 	tx->add_to_write_set(RPC_CALL_FORWARDING_REQ,
 		callfwd_key.hots_key, &callfwd_obj, tx_write_mode_t::insert);
-	
+
 	ex_result = tx->do_read(yield);
 	tatp_dassert(ex_result == tx_status_t::in_progress ||
 		ex_result == tx_status_t::must_abort);	/* If callfwd_key existed */
@@ -461,7 +461,7 @@ bool txn_insert_call_forwarding(coro_yield_t &yield, int coro_id, Tx *tx)
 			(tatp_callfwd_val_t *) &callfwd_obj.val;
 		callfwd_val->numberx[0] = tatp_callfwd_numberx0_magic;
 		callfwd_val->end_time = end_time;
-		
+
 		tatp_stat_inc(stat_tx_commit_attempted[txn_type], 1);
 		tx_status_t commit_status = tx->commit(yield);
 		return (commit_status == tx_status_t::committed);
@@ -518,7 +518,7 @@ bool txn_delete_call_forwarding(coro_yield_t &yield, int coro_id, Tx *tx)
 	callfwd_key.start_time = start_time;
 	tx->add_to_write_set(RPC_CALL_FORWARDING_REQ,
 		callfwd_key.hots_key, &callfwd_obj, tx_write_mode_t::del);
-	
+
 	ex_result = tx->do_read(yield);
 	tatp_dassert(ex_result == tx_status_t::in_progress ||
 		ex_result == tx_status_t::must_abort);	/* If callfwd_key didn't exist */
@@ -597,7 +597,7 @@ void slave_func(coro_yield_t &yield, int coro_id)
 					static_cast<int>(txn_type));
 				exit(-1);
 		}
-		
+
 		if(tx_committed) {
 			stat_tx_committed_tot++;
 			tatp_stat_inc(stat_tx_committed[static_cast<int>(txn_type)], 1);
@@ -611,7 +611,7 @@ void slave_func(coro_yield_t &yield, int coro_id)
 			latency->update(tx_usec * lat_multiplier);
 #endif
 		}
-		
+
 		/* Any coroutine can print the measurement results */
 		if((stat_tx_attempted_tot & M_1_) == M_1_) {
 			clock_gettime(CLOCK_REALTIME, &msr_end);
@@ -620,7 +620,7 @@ void slave_func(coro_yield_t &yield, int coro_id)
 			long long num_reqs = rpc->get_stat_num_reqs();
 			long long num_creqs = rpc->get_stat_num_creqs();
 
-			double msr_usec = (msr_end.tv_sec - msr_start.tv_sec) * 1000000 + 
+			double msr_usec = (msr_end.tv_sec - msr_start.tv_sec) * 1000000 +
 				(double) (msr_end.tv_nsec - msr_start.tv_nsec) / 1000;
 
 			/* Fill in this worker's global stats */
@@ -693,6 +693,8 @@ void slave_func(coro_yield_t &yield, int coro_id)
 				0, TATP_TXN_TYPES * sizeof(long long));
 			latency->reset();
 		}
+    //run the while loop for once.
+		break;
 	}
 }
 
@@ -711,7 +713,7 @@ void parse_config()
 	num_backups = test_config.get("num_backups").get_int64();
 	workers_per_machine = test_config.get("workers_per_machine").get_int64();
 	use_lock_server = test_config.get("use_lock_server").get_bool();
-	
+
 	assert(num_coro >= 2 && num_coro <= RPC_MAX_CORO);
 	assert(base_port_index >= 0 && base_port_index <= 8);
 	assert(num_ports >= 1 && num_ports <= 8);
@@ -754,14 +756,14 @@ void run_thread(struct thread_params *params)
 	 */
 
 	//printf("Worker %d: populating TATP tables.\n", wrkr_gid);
-	
+
 	if(wrkr_gid/workers_per_machine == num_machines-1)
 	{
 		printf("Worker %d: populating TATP tables.\n", wrkr_gid);
-		tatp->populate_all_tables_barrier(mappings);	
+		tatp->populate_all_tables_barrier(mappings);
 	}
 	//tatp->populate_all_tables_barrier(mappings);
-	
+
 	workgen_arr = tatp->create_workgen_array();
 	hrd_red_printf("Worker %d: populated all tables\n", wrkr_gid);
 
