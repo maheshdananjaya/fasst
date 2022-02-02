@@ -35,7 +35,8 @@
 #define FREQUENCY_INSERT_CALL_FORWARDING     2    // Multi
 #define FREQUENCY_DELETE_CALL_FORWARDING     2    // Multi
 
-#define SUBSCRIBERS_PER_MACHINE 1000000	/* 1 million subscribers per machine */
+//#define SUBSCRIBERS_PER_MACHINE 1000000	/* 1 million subscribers per machine */
+#define SUBSCRIBERS_PER_MACHINE 100000	/* 1 million subscribers per machine */
 
 /* SHM keys for tables: (f + 1) keys per table at every machine */
 #define SUBSCRIBER_BASE_SHM_KEY 2000
@@ -130,7 +131,7 @@ struct tatp_accinf_val_t {
 	char data3[3];
 	char data4[5];
 	uint8_t unused[6];
-}; 
+};
 static_assert(sizeof(tatp_accinf_val_t) == 16, "");
 
 
