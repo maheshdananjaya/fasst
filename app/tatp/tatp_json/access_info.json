@@ -4,7 +4,7 @@
 
   "table": {
     "name": "ACCESS INFO",
-    "item_count": 4000000,
+    "item_count": 12000000,
     "concurrent_read": true,
     "concurrent_write": true,
     "numa_node": 0

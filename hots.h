@@ -12,6 +12,8 @@
 using namespace std;
 using namespace boost::coroutines;
 
+#define DAM
+
 /* Macros */
 #define bit_capacity(b) (1 << b)
 

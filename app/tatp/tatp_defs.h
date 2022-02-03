@@ -36,7 +36,7 @@
 #define FREQUENCY_DELETE_CALL_FORWARDING     2    // Multi
 
 
-//#define DAM
+#define DAM
 //#define SUBSCRIBERS_PER_MACHINE 1000000	/* 1 million subscribers per machine */
 
 #define SUBSCRIBERS_PER_MACHINE 1000000	/* 1 million subscribers per machine */
