@@ -9,7 +9,7 @@
 	"num_qps": 1,
 	"postlist": 16,
 	"numa_node": 0,
-	"num_machines": 3,
+	"num_machines": 5,
 	"workers_per_machine": 14,
 	"num_backups": 0,
 	"use_lock_server": false
