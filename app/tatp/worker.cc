@@ -90,11 +90,14 @@ void master_func(coro_yield_t &yield, int coro_id)
 		next_coro[coro_i] = (coro_i == num_coro - 1) ? 0 : coro_i + 1;
 	}
 
+#ifdef DAM
 	if(wrkr_gid/workers_per_machine != num_machines-1)
 	{
 			yield(coro_arr[1]);
 	}
-	//yield(coro_arr[1]);
+#else
+	yield(coro_arr[1]);
+#endif
 
 	while(1) {
 		next_coro = rpc->poll_comps();
@@ -764,11 +767,15 @@ void run_thread(struct thread_params *params)
 
 	//printf("Worker %d: populating TATP tables.\n", wrkr_gid);
 
+#ifdef DAM
 	if(wrkr_gid/workers_per_machine == num_machines-1)
 	{
 		printf("Worker %d: populating TATP tables.\n", wrkr_gid);
 		tatp->populate_all_tables_barrier(mappings);
 	}
+#else
+ tatp->populate_all_tables_barrier(mappings);
+#endif
 	//tatp->populate_all_tables_barrier(mappings);
 
 	workgen_arr = tatp->create_workgen_array();

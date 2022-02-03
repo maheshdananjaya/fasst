@@ -26,7 +26,7 @@ public:
 
 	int tot_primary_client_machines;
 	int tot_primary_memory_machines;
-	
+
 	int base_lockserver_wn;
 	bool am_i_lock_server;
 
@@ -70,14 +70,23 @@ public:
 			(machine_id == num_machines - 1) : false;
 	}
 
+
 	forceinline int get_primary_mn(uint64_t keyhash)
 	{
 		/*
 		 * Lower-order keyhash bits are used to map to buckets. @keyhash has
 		 * at least 48 useful bits, so shifting by 32 is OK.
 		 */
-		return tot_primary_client_machines + ((keyhash >> 32) % tot_primary_memory_machines);
+		#ifdef DAM
+				return tot_primary_client_machines + ((keyhash >> 32) % tot_primary_memory_machines);
+
+		#else
+		  	return ((keyhash >> 32) % tot_primary_machines);
+		#endif
 	}
+
+
+
 
 	/* Get the backup machine with index @back_i (0-based) for this primary */
 	forceinline int get_backup_mn_from_primary(int primary_mn, int back_i)
