@@ -407,7 +407,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 		*/
         //DAMread version for DAM
 		size_t size_req = ds_forge_generic_get_req(req, caller_id,
-			item.key, item.keyhash, ds_reqtype_t::get_rdonly, item.obj->hdr.version)
+			item.key, item.keyhash, ds_reqtype_t::get_rdonly, item.obj->hdr.version);
 
 		req->freeze(size_req);
 	}
