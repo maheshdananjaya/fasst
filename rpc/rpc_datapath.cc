@@ -340,11 +340,13 @@ coro_id_t* Rpc::poll_comps()
 				/* Unmarshal the request header */
 				rpc_dassert(cmsg_reqhdr->magic == RPC_CMSG_REQ_HDR_MAGIC);
 				int _coro_seqnum = cmsg_reqhdr->coro_seqnum;
+
+				//Copyinf reponse to the resp buffer...................
 				rpc_dassert(_coro_seqnum >= 0 &&
 					_coro_seqnum <= req_batch->num_reqs);
 
 				/* Copy the response data to the user's buffer */
-				rpc_req_t *req = &req_batch->req_arr[_coro_seqnum];
+				rpc_req_t *req = &req_batch->req_arr[_ coro_seqnum];
 				rpc_dassert(req->max_resp_len >= cmsg_reqhdr->size);
 				rte_memcpy(req->resp_buf,
 					&wc_buf[wc_off + sizeof(rpc_cmsg_reqhdr_t)],
