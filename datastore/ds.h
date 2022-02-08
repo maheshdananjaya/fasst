@@ -34,8 +34,8 @@ enum class ds_reqtype_t {
 	unlock, /* Unlock a bucket */
 
 	// Sent using generic PUT request
-	put,	/* Insert or update */
-
+	put,	/* Insert or update */ 
+    delegate, // for dam
 	/*
 	 * Max 16 req types (4 bits) because of bitfield sizing in
 	 * ds_generic_get_req_t and ds_generic_put_req_t. The RPC subsystem's header
@@ -62,6 +62,8 @@ enum class ds_resptype_t {
 
 	put_success,
 	del_success,
+
+	commit_success, //for DAM
 
 	/* Max 16 resp types (4 bits). See comment for ds_reqtype_t above. */
 };
@@ -160,6 +162,33 @@ forceinline size_t ds_forge_generic_get_req(rpc_req_t *rpc_req,
 		/* Real work */
 		ds_generic_get_req_t *gg_req =
 			(ds_generic_get_req_t *) rpc_req->req_buf;
+		gg_req->caller_id = caller_id;
+		gg_req->req_type = static_cast<uint64_t>(req_type);
+		gg_req->keyhash = keyhash;
+		gg_req->key = key;
+
+		return sizeof(ds_generic_get_req_t);
+	}
+}
+
+forceinline size_t ds_forge_generic_get_req(rpc_req_t *rpc_req,
+	uint32_t caller_id, hots_key_t key, uint64_t keyhash, ds_reqtype_t req_type, uint64_t _ver)
+{
+	ds_dassert(req_type == ds_reqtype_t::get_rdonly ||
+		req_type == ds_reqtype_t::get_for_upd ||
+		req_type == ds_reqtype_t::lock_for_ins ||
+		req_type == ds_reqtype_t::del ||
+		req_type == ds_reqtype_t::unlock);
+
+	ds_dassert(rpc_req != NULL && rpc_req->req_buf != NULL);
+	ds_dassert(is_aligned(rpc_req->req_buf, sizeof(uint32_t)));
+	ds_dassert(rpc_req->available_bytes() >= sizeof(ds_generic_get_req_t));
+
+	{
+		/* Real work */
+		ds_generic_get_req_t *gg_req =
+			(ds_generic_get_req_t *) rpc_req->req_buf;
+		gg_req->_ver = _ver; // adding version number to get request for DAM	
 		gg_req->caller_id = caller_id;
 		gg_req->req_type = static_cast<uint64_t>(req_type);
 		gg_req->keyhash = keyhash;
