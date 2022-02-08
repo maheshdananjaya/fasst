@@ -191,7 +191,7 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield)
 
 /* Read keys */
 //for dam
-forceinline tx_status_t Tx::do_execute(coro_yield_t &yield, bool _dam)
+forceinline tx_status_t Tx::do_execute(coro_yield_t &yield)
 {
 	tx_dassert(tx_status == tx_status_t::in_progress);
 

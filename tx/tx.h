@@ -206,7 +206,7 @@ public:
 
 	/* tx_execute.h */
 	forceinline tx_status_t do_read(coro_yield_t &yield);
-	forceinline tx_status_t do_read(coro_yield_t &yield, bool _dam);
+	forceinline tx_status_t do_execute(coro_yield_t &yield);
 	forceinline tx_status_t do_delegate(coro_yield_t &yield);
 
 	/* Commit a transaction that only reads a single object */
