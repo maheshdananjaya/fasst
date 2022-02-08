@@ -105,6 +105,9 @@ static_assert(sizeof(ds_generic_get_req_t) == 4 * sizeof(uint64_t), "");
 // Generic PUT requests are used when the object's value value is needed in the
 // request. This includes only commit-time PUT requests.
 struct ds_generic_put_req_t {
+	
+
+	uint64_t _ver; //to make generality with get
 	uint32_t unused; /* Make struct size multiple of 8 bytes */
 	uint32_t caller_id; 
 	uint64_t req_type :4;
