@@ -72,13 +72,33 @@ enum class ds_resptype_t {
 
 /* IMPORTANT: GET request should be a prefix of PUT request */
 struct ds_generic_get_req_t {
-	uint32_t unused; /* Make struct size multiple of 8 bytes */
+	
+	// using unused biuts for the version numbers of delegate
+	uint64_t _ver;
+	uint32_t unused; /* Make struct size multiple of 8 bytes */  
 	uint32_t caller_id;
 	uint64_t req_type :4;
 	uint64_t unused_val_size :12;	/* This field is used in PUT reqs */
 	uint64_t keyhash :48; /* 16 bytes up to here */
 	hots_key_t key;
 };
+
+
+
+struct ds_generic_delegate_req_t {
+	
+	// using unused biuts for the version numbers of delegate.//version number need 60 bits.
+	uint64_t _ver;
+	uint32_t unused; /* Make struct size multiple of 8 bytes */  
+	uint32_t caller_id;
+	uint64_t req_type :4;
+	uint64_t unused_val_size :12;	/* This field is used in PUT reqs */
+	uint64_t keyhash :48; /* 16 bytes up to here */
+	hots_key_t key;
+
+};
+
+
 static_assert(sizeof(ds_generic_get_req_t) == 3 * sizeof(uint64_t), "");
 
 // Generic PUT requests are used when the object's value value is needed in the
