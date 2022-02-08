@@ -99,7 +99,8 @@ struct ds_generic_delegate_req_t {
 };
 
 
-static_assert(sizeof(ds_generic_get_req_t) == 3 * sizeof(uint64_t), "");
+//static_assert(sizeof(ds_generic_get_req_t) == 3 * sizeof(uint64_t), "");
+static_assert(sizeof(ds_generic_get_req_t) == 4 * sizeof(uint64_t), "");
 
 // Generic PUT requests are used when the object's value value is needed in the
 // request. This includes only commit-time PUT requests.
