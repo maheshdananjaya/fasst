@@ -122,7 +122,7 @@ bool txn_get_subscriber_data(coro_yield_t &yield, int coro_id, Tx *tx)
 	hots_obj_t obj;
 
 	tx->add_to_read_set(RPC_SUBSCRIBER_REQ, key.hots_key, &obj);
-	tx_status_t ex_result = tx->do_read(yield);	_unused(ex_result);
+	tx_status_t ex_result = tx->do_read(yield, true);	_unused(ex_result);
 	if(ex_result != tx_status_t::in_progress) {
 		/* Abort if we read a locked Subscriber record */
 		tx->abort_rdonly();
@@ -173,7 +173,7 @@ bool txn_get_new_destination(coro_yield_t &yield, int coro_id, Tx *tx)
 	 * 85% of the time. So avoid issuing the Call Forwarding fetches if we
 	 * have a non-existent or inactive Special Facility record.
 	 */
-	tx_status_t ex_result = tx->do_read(yield); _unused(ex_result);
+	tx_status_t ex_result = tx->do_read(yield, true); _unused(ex_result);
 	if(ex_result != tx_status_t::in_progress || specfac_obj.val_size == 0) {
 		tx->abort_rdonly();
 		return false;
@@ -201,7 +201,7 @@ bool txn_get_new_destination(coro_yield_t &yield, int coro_id, Tx *tx)
 			callfwd_key[i].hots_key, &callfwd_obj[i]);
 	}
 
-	ex_result = tx->do_read(yield);	_unused(ex_result);
+	ex_result = tx->do_read(yield, true);	_unused(ex_result);
 	if(ex_result != tx_status_t::in_progress) {
 		tx->abort_rdonly();
 		return false;
@@ -248,7 +248,7 @@ bool txn_get_access_data(coro_yield_t &yield, int coro_id, Tx *tx)
 	key.ai_type = (hrd_fastrand(&tg_seed) & 3) + 1;
 
 	tx->add_to_read_set(RPC_ACCESS_INFO_REQ, key.hots_key, &obj);
-	tx_status_t ex_result = tx->do_read(yield);	_unused(ex_result);
+	tx_status_t ex_result = tx->do_read(yield, true);	_unused(ex_result);
 
 	/*
 	 * No transaction locks Access Info records. Txn status remains @in_progress
@@ -300,7 +300,7 @@ bool txn_update_subscriber_data(coro_yield_t &yield, int coro_id, Tx *tx)
 	tx->add_to_write_set(RPC_SPECIAL_FACILITY_REQ,
 		specfac_key.hots_key, &specfac_obj, tx_write_mode_t::update);
 
-	tx_status_t ex_result = tx->do_read(yield);
+	tx_status_t ex_result = tx->do_read(yield, true);
 	tatp_dassert(ex_result == tx_status_t::in_progress ||
 		ex_result == tx_status_t::must_abort);	/* Locked or not found */
 
@@ -334,6 +334,7 @@ bool txn_update_subscriber_data(coro_yield_t &yield, int coro_id, Tx *tx)
 // 1. Read a SECONDARY_SUBSCRIBER row
 // 2. Update a SUBSCRIBER row
 // Maximum messages in a batch = 2 (during execute, logging, commit-backup)
+//DAM - no RMWs
 bool txn_update_location(coro_yield_t &yield, int coro_id, Tx *tx)
 {
 	int txn_type = static_cast<int>(tatp_txn_type_t::update_location);
@@ -350,7 +351,7 @@ bool txn_update_location(coro_yield_t &yield, int coro_id, Tx *tx)
 
 	tx->add_to_read_set(RPC_SEC_SUBSCRIBER_REQ,
 		sec_sub_key.hots_key, &sec_sub_obj);
-	tx_status_t ex_result = tx->do_read(yield);
+	tx_status_t ex_result = tx->do_read(yield, true);
 
 	tatp_dassert(ex_result == tx_status_t::in_progress);	/* Never locked */
 	tatp_dassert(sec_sub_obj.val_size > 0);	/* Must exist */
@@ -366,7 +367,7 @@ bool txn_update_location(coro_yield_t &yield, int coro_id, Tx *tx)
 
 	tx->add_to_write_set(RPC_SUBSCRIBER_REQ,
 		sub_key.hots_key, &sub_obj, tx_write_mode_t::update);
-	ex_result = tx->do_read(yield);
+	ex_result = tx->do_read(yield, true);
 
 	tatp_dassert(ex_result == tx_status_t::in_progress ||
 		ex_result == tx_status_t::must_abort);	/* If locked */
@@ -414,7 +415,7 @@ bool txn_insert_call_forwarding(coro_yield_t &yield, int coro_id, Tx *tx)
 
 	tx->add_to_read_set(RPC_SEC_SUBSCRIBER_REQ,
 		sec_sub_key.hots_key, &sec_sub_obj);
-	tx_status_t ex_result = tx->do_read(yield);
+	tx_status_t ex_result = tx->do_read(yield, true);
 	tatp_dassert(ex_result == tx_status_t::in_progress);	/* Never locked */
 
 	tatp_dassert(sec_sub_obj.val_size > 0);	/* Must exist */
@@ -433,7 +434,7 @@ bool txn_insert_call_forwarding(coro_yield_t &yield, int coro_id, Tx *tx)
 		specfac_key.hots_key, &specfac_obj);
 
 	/* The Special Facility record exists only 62.5% of the time */
-	ex_result = tx->do_read(yield); _unused(ex_result);
+	ex_result = tx->do_read(yield, true); _unused(ex_result);
 	if(ex_result != tx_status_t::in_progress || specfac_obj.val_size == 0) {
 		tx->abort_rdonly();
 		return false;
@@ -453,7 +454,7 @@ bool txn_insert_call_forwarding(coro_yield_t &yield, int coro_id, Tx *tx)
 	tx->add_to_write_set(RPC_CALL_FORWARDING_REQ,
 		callfwd_key.hots_key, &callfwd_obj, tx_write_mode_t::insert);
 
-	ex_result = tx->do_read(yield);
+	ex_result = tx->do_read(yield, true);
 	tatp_dassert(ex_result == tx_status_t::in_progress ||
 		ex_result == tx_status_t::must_abort);	/* If callfwd_key existed */
 
@@ -504,7 +505,7 @@ bool txn_delete_call_forwarding(coro_yield_t &yield, int coro_id, Tx *tx)
 
 	tx->add_to_read_set(RPC_SEC_SUBSCRIBER_REQ,
 		sec_sub_key.hots_key, &sec_sub_obj);
-	tx_status_t ex_result = tx->do_read(yield);
+	tx_status_t ex_result = tx->do_read(yield, true);
 	if(ex_result != tx_status_t::in_progress) {
 		tx->abort_rdonly();
 		return false;
@@ -526,7 +527,7 @@ bool txn_delete_call_forwarding(coro_yield_t &yield, int coro_id, Tx *tx)
 	tx->add_to_write_set(RPC_CALL_FORWARDING_REQ,
 		callfwd_key.hots_key, &callfwd_obj, tx_write_mode_t::del);
 
-	ex_result = tx->do_read(yield);
+	ex_result = tx->do_read(yield, true);
 	tatp_dassert(ex_result == tx_status_t::in_progress ||
 		ex_result == tx_status_t::must_abort);	/* If callfwd_key didn't exist */
 

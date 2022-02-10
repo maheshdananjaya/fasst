@@ -231,4 +231,37 @@ forceinline size_t ds_forge_generic_put_req(rpc_req_t *rpc_req,
 	}
 }
 
+
+forceinline size_t ds_forge_generic_put_req(rpc_req_t *rpc_req,
+	uint32_t caller_id, hots_key_t key, uint64_t keyhash, hots_obj_t *obj,
+	ds_reqtype_t req_type, uint64_t _ver)
+{
+	ds_dassert(req_type == ds_reqtype_t::put);
+	
+	ds_dassert(rpc_req != NULL && rpc_req->req_buf != NULL);
+	ds_dassert(obj != NULL);
+	ds_dassert(is_aligned(rpc_req->req_buf, sizeof(uint32_t)));
+
+	ds_dassert(obj->val_size > 0 && obj->val_size % sizeof(uint64_t) == 0);
+	size_t req_len = ds_put_req_size(obj->val_size);
+	ds_dassert(rpc_req->available_bytes() >= req_len);
+
+	{
+		/* Real work */
+		ds_generic_put_req_t *gp_req =
+			(ds_generic_put_req_t *) rpc_req->req_buf;
+        gg_req->_ver = _ver; // adding version number to get request for DAM
+		gp_req->caller_id = caller_id;
+		gp_req->req_type = static_cast<uint64_t>(req_type);
+		gp_req->val_size = obj->val_size;
+		gp_req->key = key;
+		gp_req->keyhash = keyhash;
+		
+		size_t obj_size = hots_obj_size(obj->val_size);
+		rte_memcpy((void *) &gp_req->val, (void *) obj->val, obj_size);
+
+		return req_len;
+	}
+}
+
 #endif /* DS_H */

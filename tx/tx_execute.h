@@ -191,7 +191,8 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield)
 
 /* Read keys */
 //for dam
-forceinline tx_status_t Tx::do_execute(coro_yield_t &yield)
+//DAM - Writes only needs to be read for RMWs. 
+forceinline tx_status_t Tx::do_read(coro_yield_t &yield, bool _dam)
 {
 	tx_dassert(tx_status == tx_status_t::in_progress);
 
@@ -234,7 +235,11 @@ forceinline tx_status_t Tx::do_execute(coro_yield_t &yield)
 		req->freeze(size_req);
 	}
 
+
+	//This part is unnecessary for DAM. We dont do the writes and locking part here. only in delegate.
 	/* Read + lock the write set */
+	
+ //DAM need to distinguish RMWs and regulae writes.
 	for(size_t i = ws_index; i < write_set.size(); i++) {
 		tx_rwset_item_t &item = write_set[i];
 
@@ -249,12 +254,18 @@ forceinline tx_status_t Tx::do_execute(coro_yield_t &yield)
 		/* In the execute phase, update and delete keys are handled similarly */
 		if(item.write_mode != tx_write_mode_t::insert) {
 			/* Update or delete */
-			size_req = ds_forge_generic_get_req(req, caller_id,
+			/*size_req = ds_forge_generic_get_req(req, caller_id,
 				item.key, item.keyhash, ds_reqtype_t::get_for_upd);
+				*/
+			size_req = ds_forge_generic_get_req(req, caller_id,
+				item.key, item.keyhash, ds_reqtype_t::get_rdonly);
 		} else {
 			/* Insert */
-			size_req = ds_forge_generic_get_req(req, caller_id,
+			/*size_req = ds_forge_generic_get_req(req, caller_id,
 				item.key, item.keyhash, ds_reqtype_t::lock_for_ins);
+			*/
+			size_req = ds_forge_generic_get_req(req, caller_id,
+				item.key, item.keyhash, ds_reqtype_t::get_rdonly)
 		}
 		
 		req->freeze(size_req);
@@ -310,55 +321,82 @@ forceinline tx_status_t Tx::do_execute(coro_yield_t &yield)
 		req_i++;
 	}
 
+	//DAM - what's the return object?
 	for(size_t i = ws_index; i < write_set.size(); i++) {
 		tx_rwset_item_t &item = write_set[i];
 		ds_resptype_t resp_type = (ds_resptype_t) tx_req_arr[req_i]->resp_type;
 
+
+		//DAM this is only necessary for RMW like operatoins
 		if(item.write_mode != tx_write_mode_t::insert) {
 			// Update or delete
+
 			switch(resp_type) {
-				case ds_resptype_t::get_for_upd_success:
-					tx_dassert(item.obj->hdr.locked == 1);
-
-					item.obj->val_size = 
+				case ds_resptype_t::get_rdonly_success:
+					/* Response contains header and value */
+					item.obj->val_size =
 						tx_req_arr[req_i]->resp_len - sizeof(hots_hdr_t);
-					check_item(item); /* Checks @val_size */
-			
-					item.exec_ws_locked = true;	/* Mark for unlock on abort */
+					check_item(item);	/* Checks @val_size */
+	
+					/* Save fields needed for validation */
+					item.exec_rs_exists = true;
+					item.exec_rs_version = item.obj->hdr.version;
 					break;
-				case ds_resptype_t::get_for_upd_not_found:
-				case ds_resptype_t::get_for_upd_locked:
-					tx_dassert(tx_req_arr[req_i]->resp_len == 0);
 
-					item.exec_ws_locked = false;	/* Don't unlock on abort */
+				//DAM ambigious case	
+				case ds_resptype_t::get_rdonly_not_found:
+					/* Txn need not be aborted if a rdonly key is not found. */
+					tx_dassert(tx_req_arr[req_i]->resp_len == sizeof(uint64_t));
+	
+					item.obj->val_size = 0;
+	
+					/* Save fields needed for validation */
+					item.exec_rs_exists = false;
+					item.exec_rs_version = item.obj->hdr.version;
+					break;
+				case ds_resptype_t::get_rdonly_locked:
+					tx_dassert(tx_req_arr[req_i]->resp_len == 0);
 					tx_status = tx_status_t::must_abort;
 					break;
 				default:
-					printf("Tx: Unknown response type %u for write set "
-						"(non-insert) key %" PRIu64 "\n.",
-						tx_req_arr[req_i]->resp_type, item.key);
-					exit(-1);
+					printf("Tx: Unknown response type %u for read set key "
+						"%" PRIu64 "\n.", tx_req_arr[req_i]->resp_type, item.key);
 			}
+
+
 		} else {
 			// Insert
 			switch(resp_type) {
-				case ds_resptype_t::lock_for_ins_success:
-					tx_dassert(item.obj->hdr.locked == 1);
-					tx_dassert(tx_req_arr[req_i]->resp_len ==
-						sizeof(hots_hdr_t));	/* Just the header */
-					item.exec_ws_locked = true;	/* Mark for delete on abort */
+				case ds_resptype_t::get_rdonly_success:
+					/* Response contains header and value */
+					item.obj->val_size =
+						tx_req_arr[req_i]->resp_len - sizeof(hots_hdr_t);
+					check_item(item);	/* Checks @val_size */
+	
+					/* Save fields needed for validation */
+					item.exec_rs_exists = true;
+					item.exec_rs_version = item.obj->hdr.version;
 					break;
-				case ds_resptype_t::lock_for_ins_exists:
-				case ds_resptype_t::lock_for_ins_locked:
+
+				// DAm - no need to abort in DAM. inserts must be handled o mem side
+				case ds_resptype_t::get_rdonly_not_found:
+					/* Txn need not be aborted if a rdonly key is not found. */
+					tx_dassert(tx_req_arr[req_i]->resp_len == sizeof(uint64_t));
+	
+					item.obj->val_size = 0;	
+					/* Save fields needed for validation */
+					item.exec_rs_exists = false;
+					item.exec_rs_version = item.obj->hdr.version;
+				
+					break;
+
+				case ds_resptype_t::get_rdonly_locked:
 					tx_dassert(tx_req_arr[req_i]->resp_len == 0);
 					tx_status = tx_status_t::must_abort;
-					item.exec_ws_locked = false; /* Don't unlock on abort */
 					break;
 				default:
-					printf("Tx: Unknown response type %u for write set "
-						"(insert) key %" PRIu64 "\n.",
-						tx_req_arr[req_i]->resp_type, item.key);
-					exit(-1);
+					printf("Tx: Unknown response type %u for read set key "
+						"%" PRIu64 "\n.", tx_req_arr[req_i]->resp_type, item.key);
 			}
 		}
 
@@ -380,6 +418,7 @@ forceinline tx_status_t Tx::do_execute(coro_yield_t &yield)
 
 /* Read keys */
 //for dam
+// 1 version : without RMW support. RMW need writesmakred as read if the were read by the transactions. 
 forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 {
 	tx_dassert(tx_status == tx_status_t::in_progress);
@@ -392,7 +431,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 	size_t req_i = 0;	/* Separate index bc we'll fetch both read, write set */
 	
 	/* Read the read set */
-	for(size_t i = rs_index; i < read_set.size(); i++) {
+	for(size_t i = 0; i < read_set.size(); i++) {
 		tx_rwset_item_t &item = read_set[i];
 
 		rpc_req_t *req = rpc->start_new_req(coro_id,
@@ -405,7 +444,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 		/*size_t size_req = ds_forge_generic_get_req(req, caller_id,
 			item.key, item.keyhash, ds_reqtype_t::get_rdonly);
 		*/
-        //DAMread version for DAM
+        //DAM read version for DAM
 		size_t size_req = ds_forge_generic_get_req(req, caller_id,
 			item.key, item.keyhash, ds_reqtype_t::get_rdonly, item.obj->hdr.version);
 
@@ -413,7 +452,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 	}
 
 	/* Read + lock the write set */
-	for(size_t i = ws_index; i < write_set.size(); i++) {
+	for(size_t i = 0; i < write_set.size(); i++) {
 		tx_rwset_item_t &item = write_set[i];
 
 		rpc_req_t *req = rpc->start_new_req(coro_id,
@@ -427,12 +466,20 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 		/* In the execute phase, update and delete keys are handled similarly */
 		if(item.write_mode != tx_write_mode_t::insert) {
 			/* Update or delete */
-			size_req = ds_forge_generic_get_req(req, caller_id,
-				item.key, item.keyhash, ds_reqtype_t::get_for_upd);
+			/* size_req = ds_forge_generic_get_req(req, caller_id,
+				item.key, item.keyhash, ds_reqtype_t::get_for_upd); */
+
+			//DAM -  we need the version number as well as if the write was read before writing. not required for write only keys.
+			size_req = ds_forge_generic_put_req(req, caller_id,
+				item.key, item.keyhash, ds_reqtype_t::get_for_upd, item.obj->hdr.version); // we can use MSB to mark the writes that read.
 		} else {
 			/* Insert */
-			size_req = ds_forge_generic_get_req(req, caller_id,
-				item.key, item.keyhash, ds_reqtype_t::lock_for_ins);
+			/*size_req = ds_forge_generic_get_req(req, caller_id,
+				item.key, item.keyhash, ds_reqtype_t::lock_for_ins);*/
+
+			// DAM - need to send the values
+			size_req = ds_forge_generic_put_req(req, caller_id,
+				item.key, item.keyhash, ds_reqtype_t::lock_for_ins, item.obj->hdr.version);
 		}
 		
 		req->freeze(size_req);
@@ -450,114 +497,115 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 	 * b. Record read set versions for validation.
 	 * c. Record locking status of all write set keys to unlock on abort.
 	 */
-	for(size_t i = rs_index; i < read_set.size(); i++) {
-		tx_rwset_item_t &item = read_set[i];
-		ds_resptype_t resp_type = (ds_resptype_t) tx_req_arr[req_i]->resp_type;
 
-		/* Hdr for successfully read keys need not be locked (bkt collison) */
-		switch(resp_type) {
-			case ds_resptype_t::get_rdonly_success:
-				/* Response contains header and value */
-				item.obj->val_size =
-					tx_req_arr[req_i]->resp_len - sizeof(hots_hdr_t);
-				check_item(item);	/* Checks @val_size */
+	int num_resp=0;
 
-				/* Save fields needed for validation */
-				item.exec_rs_exists = true;
-				item.exec_rs_version = item.obj->hdr.version;
-				break;
-			case ds_resptype_t::get_rdonly_not_found:
-				/* Txn need not be aborted if a rdonly key is not found. */
-				tx_dassert(tx_req_arr[req_i]->resp_len == sizeof(uint64_t));
+    //DAM transaction must duly fail if the mem side could not complete it. 
+    //tx_status must be returned appropriately. 
+	//if(read_set.size() > 0){
 
-				item.obj->val_size = 0;
-
-				/* Save fields needed for validation */
-				item.exec_rs_exists = false;
-				item.exec_rs_version = item.obj->hdr.version;
-				break;
-			case ds_resptype_t::get_rdonly_locked:
-				tx_dassert(tx_req_arr[req_i]->resp_len == 0);
-				tx_status = tx_status_t::must_abort;
-				break;
-			default:
-				printf("Tx: Unknown response type %u for read set key "
-					"%" PRIu64 "\n.", tx_req_arr[req_i]->resp_type, item.key);
-		}
-
-		req_i++;
-	}
-
-	for(size_t i = ws_index; i < write_set.size(); i++) {
-		tx_rwset_item_t &item = write_set[i];
-		ds_resptype_t resp_type = (ds_resptype_t) tx_req_arr[req_i]->resp_type;
-
-		if(item.write_mode != tx_write_mode_t::insert) {
-			// Update or delete
-			switch(resp_type) {
-				case ds_resptype_t::get_for_upd_success:
-					tx_dassert(item.obj->hdr.locked == 1);
-
-					item.obj->val_size = 
-						tx_req_arr[req_i]->resp_len - sizeof(hots_hdr_t);
-					check_item(item); /* Checks @val_size */
-			
-					item.exec_ws_locked = true;	/* Mark for unlock on abort */
-					break;
-				case ds_resptype_t::get_for_upd_not_found:
-				case ds_resptype_t::get_for_upd_locked:
-					tx_dassert(tx_req_arr[req_i]->resp_len == 0);
-
-					item.exec_ws_locked = false;	/* Don't unlock on abort */
-					tx_status = tx_status_t::must_abort;
-					break;
-				default:
-					printf("Tx: Unknown response type %u for write set "
-						"(non-insert) key %" PRIu64 "\n.",
-						tx_req_arr[req_i]->resp_type, item.key);
-					exit(-1);
-			}
-		} else {
-			// Insert
-			switch(resp_type) {
-				case ds_resptype_t::lock_for_ins_success:
-					tx_dassert(item.obj->hdr.locked == 1);
-					tx_dassert(tx_req_arr[req_i]->resp_len ==
-						sizeof(hots_hdr_t));	/* Just the header */
-					item.exec_ws_locked = true;	/* Mark for delete on abort */
-					break;
-				case ds_resptype_t::lock_for_ins_exists:
-				case ds_resptype_t::lock_for_ins_locked:
-					tx_dassert(tx_req_arr[req_i]->resp_len == 0);
-					tx_status = tx_status_t::must_abort;
-					item.exec_ws_locked = false; /* Don't unlock on abort */
-					break;
-				default:
-					printf("Tx: Unknown response type %u for write set "
-						"(insert) key %" PRIu64 "\n.",
-						tx_req_arr[req_i]->resp_type, item.key);
-					exit(-1);
-			}
-		}
-
-		req_i++;
-	}
-
-	/*
-	 * These indices only make sense if we return ex_success, so no need to
-	 * update them in error cases.
-	 */
-	rs_index = read_set.size();
-	ws_index = write_set.size();
+		for(size_t i = 0; i < read_set.size(); i++) {
+			tx_rwset_item_t &item = read_set[i];
+			ds_resptype_t resp_type = (ds_resptype_t) tx_req_arr[req_i]->resp_type;
 	
+			/* Hdr for successfully read keys need not be locked (bkt collison) */
+			switch(resp_type) {
+				case ds_resptype_t::get_rdonly_success:
+					/* Response contains header and value */
+					item.obj->val_size =
+						tx_req_arr[req_i]->resp_len - sizeof(hots_hdr_t);
+					check_item(item);	/* Checks @val_size */
+	
+					/* Save fields needed for validation */
+					item.exec_rs_exists = true;
+					item.exec_rs_version = item.obj->hdr.version;
+					break;
+				case ds_resptype_t::get_rdonly_not_found:
+					/* Txn need not be aborted if a rdonly key is not found. */
+					tx_dassert(tx_req_arr[req_i]->resp_len == sizeof(uint64_t));
+	
+					item.obj->val_size = 0;
+	
+					/* Save fields needed for validation */
+					item.exec_rs_exists = false;
+					item.exec_rs_version = item.obj->hdr.version;
+					break;
+				case ds_resptype_t::get_rdonly_locked:
+					tx_dassert(tx_req_arr[req_i]->resp_len == 0);
+					tx_status = tx_status_t::must_abort;
+					break;
+				default:
+					printf("Tx: Unknown response type %u for read set key "
+						"%" PRIu64 "\n.", tx_req_arr[req_i]->resp_type, item.key);
+			}
+	
+			req_i++;
+		}
+	//}
+	//else{
+
+		for(size_t i = ws_index; i < write_set.size(); i++) {
+			tx_rwset_item_t &item = write_set[i];
+			ds_resptype_t resp_type = (ds_resptype_t) tx_req_arr[req_i]->resp_type;
+	
+			if(item.write_mode != tx_write_mode_t::insert) {
+				// Update or delete
+				switch(resp_type) {
+					case ds_resptype_t::get_for_upd_success:
+						tx_dassert(item.obj->hdr.locked == 1);
+	
+	
+						item.obj->val_size = 
+							tx_req_arr[req_i]->resp_len - sizeof(hots_hdr_t);
+						check_item(item); /* Checks @val_size */
+				
+						item.exec_ws_locked = true;	/* Mark for unlock on abort */
+						break;
+					case ds_resptype_t::get_for_upd_not_found:
+					case ds_resptype_t::get_for_upd_locked:
+						tx_dassert(tx_req_arr[req_i]->resp_len == 0);
+	
+						item.exec_ws_locked = false;	/* Don't unlock on abort */
+						tx_status = tx_status_t::must_abort;
+						break;
+					default:
+						printf("Tx: Unknown response type %u for write set "
+							"(non-insert) key %" PRIu64 "\n.",
+							tx_req_arr[req_i]->resp_type, item.key);
+						exit(-1);
+				}
+			} else {
+				// Insert
+				switch(resp_type) {
+					case ds_resptype_t::lock_for_ins_success:
+						tx_dassert(item.obj->hdr.locked == 1);
+						tx_dassert(tx_req_arr[req_i]->resp_len ==
+							sizeof(hots_hdr_t));	/* Just the header */
+						item.exec_ws_locked = true;	/* Mark for delete on abort */
+						break;
+					case ds_resptype_t::lock_for_ins_exists:
+					case ds_resptype_t::lock_for_ins_locked:
+						tx_dassert(tx_req_arr[req_i]->resp_len == 0);
+						tx_status = tx_status_t::must_abort;
+						item.exec_ws_locked = false; /* Don't unlock on abort */
+						break;
+					default:
+						printf("Tx: Unknown response type %u for write set "
+							"(insert) key %" PRIu64 "\n.",
+							tx_req_arr[req_i]->resp_type, item.key);
+						exit(-1);
+				}
+			}
+	
+			req_i++;
+		}
+	//} // end of the write-set
+
+
 	tx_dassert(tx_status == tx_status_t::in_progress ||
 		tx_status == tx_status_t::must_abort);
+
 	return tx_status;
 }
-
-
-
-
-
 
 #endif /* TX_EXECUTE_H */
