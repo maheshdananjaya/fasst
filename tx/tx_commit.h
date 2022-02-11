@@ -74,7 +74,7 @@ forceinline tx_status_t Tx::commit(coro_yield_t &yield, bool _dam)
   // new commit for DAM
 	tx_dassert(tx_status == tx_status_t::in_progress);
 
-	if(write_set.size() > 0 ||  read_set.size() > 0){
+	tx_dassert(write_set.size() > 0 ||  read_set.size() > 0);
 
 		bool _success =  (do_delegate(yield)==tx_status_t::aborted) ? false : true;
 		if(!_success) {
@@ -86,8 +86,6 @@ forceinline tx_status_t Tx::commit(coro_yield_t &yield, bool _dam)
 			tx_status = tx_status_t::committed;
 		return tx_status_t::committed;
 		}
-
-	}
 }
 
   
