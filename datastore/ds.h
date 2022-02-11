@@ -250,7 +250,7 @@ forceinline size_t ds_forge_generic_put_req(rpc_req_t *rpc_req,
 		/* Real work */
 		ds_generic_put_req_t *gp_req =
 			(ds_generic_put_req_t *) rpc_req->req_buf;
-        gg_req->_ver = _ver; // adding version number to get request for DAM
+        gp_req->_ver = _ver; // adding version number to get request for DAM
 		gp_req->caller_id = caller_id;
 		gp_req->req_type = static_cast<uint64_t>(req_type);
 		gp_req->val_size = obj->val_size;
