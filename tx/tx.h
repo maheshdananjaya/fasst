@@ -239,6 +239,10 @@ public:
 		std::vector<int> replica_vec);
 	forceinline tx_status_t commit(coro_yield_t &yield);
 	forceinline void abort(coro_yield_t &yield);
+
+	forceinline tx_status_t commit(coro_yield_t &yield, bool _dam);
+	forceinline void abort(coro_yield_t &yield, bool _dam);
+	
 	forceinline bool validate(coro_yield_t &yield);
 
 	/* tx_logger.h */
