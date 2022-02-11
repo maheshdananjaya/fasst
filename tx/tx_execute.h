@@ -455,32 +455,48 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 	for(size_t i = 0; i < write_set.size(); i++) {
 		tx_rwset_item_t &item = write_set[i];
 
+		//DAM need puts
 		rpc_req_t *req = rpc->start_new_req(coro_id,
 			item.rpc_reqtype, item.primary_mn,
-			(uint8_t *) &item.obj->hdr, sizeof(hots_obj_t));
+			(uint8_t *) item.obj->val, sizeof(uint64_t));
 
+		tx_dassert(req_i < RPC_MAX_MSG_CORO);
 		tx_req_arr[req_i] = req;
 		req_i++;
 
 		size_t size_req;
-		/* In the execute phase, update and delete keys are handled similarly */
-		if(item.write_mode != tx_write_mode_t::insert) {
-			/* Update or delete */
-			/* size_req = ds_forge_generic_get_req(req, caller_id,
-				item.key, item.keyhash, ds_reqtype_t::get_for_upd); */
+		
 
-			//DAM -  we need the version number as well as if the write was read before writing. not required for write only keys.
-			size_req = ds_forge_generic_put_req(req, caller_id,
-				item.key, item.keyhash, ds_reqtype_t::get_for_upd, (uint64_t) item.obj->hdr.version); // we can use MSB to mark the writes that read.
-		} else {
-			/* Insert */
-			/*size_req = ds_forge_generic_get_req(req, caller_id,
-				item.key, item.keyhash, ds_reqtype_t::lock_for_ins);*/
-
-			// DAM - need to send the values
-			size_req = ds_forge_generic_put_req(req, caller_id,
-				item.key, item.keyhash, ds_reqtype_t::lock_for_ins, (uint64_t) item.obj->hdr.version);
+		//Insert need s
+        if(item.write_mode != tx_write_mode_t::del) {
+				/* Insert or update */
+				size_req = ds_forge_generic_put_req(req, caller_id,
+					item.key, item.keyhash, item.obj, ds_reqtype_t::put,(uint64_t) item.obj->hdr.version);
+			} else {
+				/* Delete */
+				size_req = ds_forge_generic_get_req(req, caller_id,
+					item.key, item.keyhash, ds_reqtype_t::del, (uint64_t) item.obj->hdr.version);
 		}
+
+        
+	    ///* In the execute phase, update and delete keys are handled similarly */
+		//if(item.write_mode != tx_write_mode_t::insert) {
+		//	/* Update or delete */
+		//	/* size_req = ds_forge_generic_get_req(req, caller_id,
+		//		item.key, item.keyhash, ds_reqtype_t::get_for_upd); */
+		//
+		//	//DAM -  we need the version number as well as if the write was read before writing. not required for write only keys.
+		//	size_req = ds_forge_generic_put_req(req, caller_id,
+		//		item.key, item.keyhash, item.obj, ds_reqtype_t::get_for_upd, (uint64_t) item.obj->hdr.version); // we can use MSB to mark the writes that read.
+		//} else {
+		//	/* Insert */
+		//	/*size_req = ds_forge_generic_get_req(req, caller_id,
+		//		item.key, item.keyhash, ds_reqtype_t::lock_for_ins);*/
+		//	
+		//	// DAM - need to send the values
+		//	size_req = ds_forge_generic_put_req(req, caller_id,
+		//		item.key, item.keyhash, item.obj, ds_reqtype_t::lock_for_ins, (uint64_t) item.obj->hdr.version);
+		//}
 		
 		req->freeze(size_req);
 	}
@@ -542,64 +558,84 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 	
 			req_i++;
 		}
+
+
+
+		/* Check the responses */
+	for(size_t _req_i = 0; _req_i < write_set.size(); _req_i++) {
+
+		uint16_t resp_type = tx_req_arr[req_i]->resp_type; _unused(resp_type);
+
+		//DAM need an additional response type here to flag write-lock unsuccess.
+		//tx_dassert(resp_type == (uint16_t) ds_resptype_t::put_success || resp_type == (uint16_t) ds_resptype_t::del_success);
+        if (!(resp_type == (uint16_t) ds_resptype_t::put_success || resp_type == (uint16_t) ds_resptype_t::del_success)){
+        	tx_status = tx_status_t::must_abort;	
+        }
+		req_i++;
+	}
+
 	//}
 	//else{
 
-		for(size_t i = ws_index; i < write_set.size(); i++) {
-			tx_rwset_item_t &item = write_set[i];
-			ds_resptype_t resp_type = (ds_resptype_t) tx_req_arr[req_i]->resp_type;
-	
-			if(item.write_mode != tx_write_mode_t::insert) {
-				// Update or delete
-				switch(resp_type) {
-					case ds_resptype_t::get_for_upd_success:
-						tx_dassert(item.obj->hdr.locked == 1);
-	
-	
-						item.obj->val_size = 
-							tx_req_arr[req_i]->resp_len - sizeof(hots_hdr_t);
-						check_item(item); /* Checks @val_size */
-				
-						item.exec_ws_locked = true;	/* Mark for unlock on abort */
-						break;
-					case ds_resptype_t::get_for_upd_not_found:
-					case ds_resptype_t::get_for_upd_locked:
-						tx_dassert(tx_req_arr[req_i]->resp_len == 0);
-	
-						item.exec_ws_locked = false;	/* Don't unlock on abort */
-						tx_status = tx_status_t::must_abort;
-						break;
-					default:
-						printf("Tx: Unknown response type %u for write set "
-							"(non-insert) key %" PRIu64 "\n.",
-							tx_req_arr[req_i]->resp_type, item.key);
-						exit(-1);
-				}
-			} else {
-				// Insert
-				switch(resp_type) {
-					case ds_resptype_t::lock_for_ins_success:
-						tx_dassert(item.obj->hdr.locked == 1);
-						tx_dassert(tx_req_arr[req_i]->resp_len ==
-							sizeof(hots_hdr_t));	/* Just the header */
-						item.exec_ws_locked = true;	/* Mark for delete on abort */
-						break;
-					case ds_resptype_t::lock_for_ins_exists:
-					case ds_resptype_t::lock_for_ins_locked:
-						tx_dassert(tx_req_arr[req_i]->resp_len == 0);
-						tx_status = tx_status_t::must_abort;
-						item.exec_ws_locked = false; /* Don't unlock on abort */
-						break;
-					default:
-						printf("Tx: Unknown response type %u for write set "
-							"(insert) key %" PRIu64 "\n.",
-							tx_req_arr[req_i]->resp_type, item.key);
-						exit(-1);
-				}
-			}
-	
-			req_i++;
-		}
+		//for(size_t i = ws_index; i < write_set.size(); i++) {
+		//	tx_rwset_item_t &item = write_set[i];
+		//	ds_resptype_t resp_type = (ds_resptype_t) tx_req_arr[req_i]->resp_type;	
+//
+//
+//
+		//	if(item.write_mode != tx_write_mode_t::insert) {
+		//		// Update or delete
+		//		switch(resp_type) {
+		//			case ds_resptype_t::get_for_upd_success:
+		//				tx_dassert(item.obj->hdr.locked == 1);
+	//
+	//
+		//				item.obj->val_size = 
+		//					tx_req_arr[req_i]->resp_len - sizeof(hots_hdr_t);
+		//				check_item(item); /* Checks @val_size */
+		//		
+		//				item.exec_ws_locked = true;	/* Mark for unlock on abort */
+		//				break;
+		//			case ds_resptype_t::get_for_upd_not_found:
+		//			case ds_resptype_t::get_for_upd_locked:
+		//				tx_dassert(tx_req_arr[req_i]->resp_len == 0);
+	//
+		//				item.exec_ws_locked = false;	/* Don't unlock on abort */
+		//				tx_status = tx_status_t::must_abort;
+		//				break;
+		//			default:
+		//				printf("Tx: Unknown response type %u for write set "
+		//					"(non-insert) key %" PRIu64 "\n.",
+		//					tx_req_arr[req_i]->resp_type, item.key);
+		//				exit(-1);
+		//		}
+		//	} else {
+		//		// Insert
+		//		switch(resp_type) {
+		//			case ds_resptype_t::lock_for_ins_success:
+		//				tx_dassert(item.obj->hdr.locked == 1);
+		//				tx_dassert(tx_req_arr[req_i]->resp_len ==
+		//					sizeof(hots_hdr_t));	/* Just the header */
+		//				item.exec_ws_locked = true;	/* Mark for delete on abort */
+		//				break;
+		//			case ds_resptype_t::lock_for_ins_exists:
+		//			case ds_resptype_t::lock_for_ins_locked:
+		//				tx_dassert(tx_req_arr[req_i]->resp_len == 0);
+		//				tx_status = tx_status_t::must_abort;
+		//				item.exec_ws_locked = false; /* Don't unlock on abort */
+		//				break;
+		//			default:
+		//				printf("Tx: Unknown response type %u for write set "
+		//					"(insert) key %" PRIu64 "\n.",
+		//					tx_req_arr[req_i]->resp_type, item.key);
+		//				exit(-1);
+		//		}
+		//	}
+	    //
+		//	req_i++;
+		//}
+
+
 	//} // end of the write-set
 
 
