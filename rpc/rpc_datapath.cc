@@ -397,7 +397,7 @@ coro_id_t* Rpc::poll_comps()
 					_mchn_id, cmsg_reqhdr->size, wc_len, (int) _num_reqs);
 
 
-				// YALA only the first or the last message of the batch need to be attached with the respose.
+				// DAM only the first or the last message of the batch need to be attached with the respose.
 				// make sure that only one transaction from one machine is processed at one. batch can consis tof multiple batches. highly unlikely?.
 
 				/* Copy the request header to the response */
@@ -407,7 +407,7 @@ coro_id_t* Rpc::poll_comps()
 				resp_mbuf->cur_buf += sizeof(rpc_cmsg_reqhdr_t);
 				wc_off += sizeof(rpc_cmsg_reqhdr_t);
 
-				//YALA
+				//DAM
 				/*recreate the read-set and write-set*/
 
 				/*invoke a handler for the transaction which does the two phase locking.

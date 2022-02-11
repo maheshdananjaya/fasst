@@ -30,6 +30,9 @@ forceinline size_t ds_fixedtable_rpc_handler(
 	uint64_t *_hdr = (uint64_t *) resp_buf;
 	char *_val_buf = (char *) resp_buf + sizeof(uint64_t);
 
+	//lock and unlock must happen on memory side.
+	//1. lock read-set and wqrite-set. 2. validate and unlock.
+
 	switch(req_type) {
 
 	case ds_reqtype_t::get_rdonly : {

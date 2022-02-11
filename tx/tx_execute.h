@@ -546,6 +546,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 					/* Save fields needed for validation */
 					item.exec_rs_exists = false;
 					item.exec_rs_version = item.obj->hdr.version;
+					//Error: shouldn't the transaction be aborting?
 					break;
 				case ds_resptype_t::get_rdonly_locked:
 					tx_dassert(tx_req_arr[req_i]->resp_len == 0);

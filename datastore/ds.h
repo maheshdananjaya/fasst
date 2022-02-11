@@ -35,7 +35,11 @@ enum class ds_reqtype_t {
 
 	// Sent using generic PUT request
 	put,	/* Insert or update */ 
-    delegate, // for dam
+	
+    delegate_dam, // for dam
+    get_rdonly_dam,
+    put_dam,
+    del_dam,
 	/*
 	 * Max 16 req types (4 bits) because of bitfield sizing in
 	 * ds_generic_get_req_t and ds_generic_put_req_t. The RPC subsystem's header
