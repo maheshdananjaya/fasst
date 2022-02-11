@@ -84,9 +84,8 @@ forceinline tx_status_t Tx::commit(coro_yield_t &yield, bool _dam)
 		}
 		else{
 			tx_status = tx_status_t::committed;
-		return tx_status_t::committed
+		return tx_status_t::committed;
 		}
-
 
 	}
 }
