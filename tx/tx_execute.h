@@ -265,7 +265,7 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield, bool _dam)
 				item.key, item.keyhash, ds_reqtype_t::lock_for_ins);
 			*/
 			size_req = ds_forge_generic_get_req(req, caller_id,
-				item.key, item.keyhash, ds_reqtype_t::get_rdonly)
+				item.key, item.keyhash, ds_reqtype_t::get_rdonly);
 		}
 		
 		req->freeze(size_req);
@@ -446,7 +446,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 		*/
         //DAM read version for DAM
 		size_t size_req = ds_forge_generic_get_req(req, caller_id,
-			item.key, item.keyhash, ds_reqtype_t::get_rdonly, item.obj->hdr.version);
+			item.key, item.keyhash, ds_reqtype_t::get_rdonly, (uint64_t) item.obj->hdr.version);
 
 		req->freeze(size_req);
 	}
@@ -471,7 +471,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 
 			//DAM -  we need the version number as well as if the write was read before writing. not required for write only keys.
 			size_req = ds_forge_generic_put_req(req, caller_id,
-				item.key, item.keyhash, ds_reqtype_t::get_for_upd, item.obj->hdr.version); // we can use MSB to mark the writes that read.
+				item.key, item.keyhash, ds_reqtype_t::get_for_upd, (uint64_t) item.obj->hdr.version); // we can use MSB to mark the writes that read.
 		} else {
 			/* Insert */
 			/*size_req = ds_forge_generic_get_req(req, caller_id,
@@ -479,7 +479,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 
 			// DAM - need to send the values
 			size_req = ds_forge_generic_put_req(req, caller_id,
-				item.key, item.keyhash, ds_reqtype_t::lock_for_ins, item.obj->hdr.version);
+				item.key, item.keyhash, ds_reqtype_t::lock_for_ins, (uint64_t) item.obj->hdr.version);
 		}
 		
 		req->freeze(size_req);
