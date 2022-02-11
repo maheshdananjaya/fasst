@@ -227,7 +227,7 @@ bool txn_get_new_destination(coro_yield_t &yield, int coro_id, Tx *tx)
 	if(callfwd_success) {
 		/* Try to commit, which may fail during validation */
 		tatp_stat_inc(stat_tx_commit_attempted[txn_type], 1);
-		tx_status_t commit_result = tx->commit(yield);
+		tx_status_t commit_result = tx->commit(yield, true);
 		return (commit_result == tx_status_t::committed);
 	} else {
 		tx->abort_rdonly();
@@ -305,7 +305,7 @@ bool txn_update_subscriber_data(coro_yield_t &yield, int coro_id, Tx *tx)
 		ex_result == tx_status_t::must_abort);	/* Locked or not found */
 
 	if(ex_result == tx_status_t::must_abort) {
-		tx->abort(yield);
+		tx->abort(yield, true);
 		return false;
 	}
 
@@ -319,7 +319,7 @@ bool txn_update_subscriber_data(coro_yield_t &yield, int coro_id, Tx *tx)
 	specfac_val->data_a = hrd_fastrand(&tg_seed);	/* Update */
 
 	tatp_stat_inc(stat_tx_commit_attempted[txn_type], 1);
-	tx_status_t commit_status = tx->commit(yield); _unused(commit_status);
+	tx_status_t commit_status = tx->commit(yield, true); _unused(commit_status);
 
 	/*
 	 * If we managed to lock the SUBSCRIBER and SPECIAL_FACILTY record, the
@@ -378,7 +378,7 @@ bool txn_update_location(coro_yield_t &yield, int coro_id, Tx *tx)
 		sub_val->vlr_location = vlr_location;	/* Update */
 
 		tatp_stat_inc(stat_tx_commit_attempted[txn_type], 1);
-		tx_status_t commit_status = tx->commit(yield); _unused(commit_status);
+		tx_status_t commit_status = tx->commit(yield, true); _unused(commit_status);
 
 		/*
 		 * If we managed to lock the SUBSCRIBER record, the txn must commit.
@@ -387,7 +387,7 @@ bool txn_update_location(coro_yield_t &yield, int coro_id, Tx *tx)
 		tatp_dassert(commit_status == tx_status_t::committed);
 		return true;
 	} else {
-		tx->abort(yield);
+		tx->abort(yield, true);
 		return false;
 	}
 }
@@ -471,7 +471,7 @@ bool txn_insert_call_forwarding(coro_yield_t &yield, int coro_id, Tx *tx)
 		callfwd_val->end_time = end_time;
 
 		tatp_stat_inc(stat_tx_commit_attempted[txn_type], 1);
-		tx_status_t commit_status = tx->commit(yield);
+		tx_status_t commit_status = tx->commit(yield, true);
 		return (commit_status == tx_status_t::committed);
 	} else {
 		/*
@@ -479,7 +479,7 @@ bool txn_insert_call_forwarding(coro_yield_t &yield, int coro_id, Tx *tx)
 		 * fails. We cannot use abort_rdonly() here, but no RPC requests
 		 * will be sent anyway.
 		 */
-		tx->abort(yield);
+		tx->abort(yield, true);
 		return false;
 	}
 }
@@ -541,7 +541,7 @@ bool txn_delete_call_forwarding(coro_yield_t &yield, int coro_id, Tx *tx)
 		tatp_dassert(callfwd_val->numberx[0] == tatp_callfwd_numberx0_magic);
 
 		tatp_stat_inc(stat_tx_commit_attempted[txn_type], 1);
-		tx_status_t commit_status = tx->commit(yield);
+		tx_status_t commit_status = tx->commit(yield, true);
 		return (commit_status == tx_status_t::committed);
 	} else {
 		/*
@@ -549,7 +549,7 @@ bool txn_delete_call_forwarding(coro_yield_t &yield, int coro_id, Tx *tx)
 		 * fails. We cannot use abort_rdonly() here, but no RPC requests
 		 * will be sent anyway.
 		 */
-		tx->abort(yield);
+		tx->abort(yield, true);
 		return false;
 	}
 }

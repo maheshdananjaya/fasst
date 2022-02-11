@@ -509,6 +509,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 			ds_resptype_t resp_type = (ds_resptype_t) tx_req_arr[req_i]->resp_type;
 	
 			/* Hdr for successfully read keys need not be locked (bkt collison) */
+			//DAM need tomlokc as well
 			switch(resp_type) {
 				case ds_resptype_t::get_rdonly_success:
 					/* Response contains header and value */

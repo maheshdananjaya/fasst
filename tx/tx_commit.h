@@ -257,6 +257,41 @@ forceinline void Tx::abort(coro_yield_t &yield)
 	}
 }
 
+
+//DAM abort. no unlocking.
+forceinline void Tx::abort(coro_yield_t &yield, bool _dam)
+{
+	/* User cannot call abort() after calling commit() or abort() */
+	tx_dassert(tx_status == tx_status_t::in_progress ||
+		tx_status == tx_status_t::must_abort);
+
+	tx_status = tx_status_t::aborted;
+
+#if TX_ENABLE_LOCK_SERVER == 1
+	if(mappings->use_lock_server) {
+		if(lockserver_locked) {
+			/* Only unlock if we successfully locked in the 1st place */
+			tx_stat_inc(stat_lockserver_unlock_req, 1);
+			send_lockserver_req(yield, locksrv_reqtype_t::unlock);
+			return;
+		} else {
+			/* No need to unlock anything bc lockserver unlocks on failure. */
+			return;
+		}
+	}
+#endif
+
+	/*
+	 * If we are here, lockserver is not being used so we need to individually
+	 * unlock the write set keys that we successfully locked. Insert mode keys
+	 * that were successfully (temporarily) inserted were also marked locked
+	 * during execution.
+	 */
+	rpc->clear_req_batch(coro_id);
+	//DAM no unlocking
+
+}
+
 /* Validate keys. For now, we re-read full objects during validation. */
 bool Tx::validate(coro_yield_t &yield)
 {
