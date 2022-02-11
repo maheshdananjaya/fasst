@@ -574,6 +574,8 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 		req_i++;
 	}
 
+	num_resp = req_i;
+
 	//}
 	//else{
 

@@ -76,7 +76,7 @@ forceinline tx_status_t Tx::commit(coro_yield_t &yield, bool _dam)
 
 	if(write_set.size() > 0 ||  read_set.size() > 0){
 
-		bool _success = do_delegate(yield);
+		bool _success =  (do_delegate(yield)==tx_status_t::aborted) ? false : true;
 		if(!_success) {
 				abort(yield);
 				tx_dassert(tx_status == tx_status_t::aborted);
