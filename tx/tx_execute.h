@@ -239,9 +239,11 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield, bool _dam)
 	//This part is unnecessary for DAM. We dont do the writes and locking part here. only in delegate.
 	/* Read + lock the write set */
 	
- //DAM need to distinguish RMWs and regulae writes.
+ 	//DAM need to distinguish RMWs and regulae writes.
 	for(size_t i = ws_index; i < write_set.size(); i++) {
 		tx_rwset_item_t &item = write_set[i];
+
+		if(item.write_mode == tx_write_mode_t::insert) continue;
 
 		rpc_req_t *req = rpc->start_new_req(coro_id,
 			item.rpc_reqtype, item.primary_mn,
@@ -259,7 +261,10 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield, bool _dam)
 				*/
 			size_req = ds_forge_generic_get_req(req, caller_id,
 				item.key, item.keyhash, ds_reqtype_t::get_rdonly);
-		} else {
+		} 
+
+		//DAM never acquires locks for inserts.
+		else {
 			/* Insert */
 			/*size_req = ds_forge_generic_get_req(req, caller_id,
 				item.key, item.keyhash, ds_reqtype_t::lock_for_ins);
@@ -324,6 +329,10 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield, bool _dam)
 	//DAM - what's the return object?
 	for(size_t i = ws_index; i < write_set.size(); i++) {
 		tx_rwset_item_t &item = write_set[i];
+
+		if(item.write_mode == tx_write_mode_t::insert) continue;
+		tx_dassert(item.write_mode != tx_write_mode_t::insert);
+
 		ds_resptype_t resp_type = (ds_resptype_t) tx_req_arr[req_i]->resp_type;
 
 
