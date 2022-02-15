@@ -76,7 +76,9 @@
 #define RPC_INVALID_MN -1	/* An invalid worker number */
 
 // Immediate data formatting
-#define RPC_IS_REQ_BITS 1
+//#define RPC_IS_REQ_BITS 1
+//DAM - need 2 bits to flat the delegated requests.
+#define RPC_IS_REQ_BITS 2
 #define RPC_NUM_REQS_BITS 5	/* Max requests in the coalesced message = 31 */
 #define RPC_CONFIG_ID_BITS 4	/* XXX too low: Max 16 reconfigurations */
 

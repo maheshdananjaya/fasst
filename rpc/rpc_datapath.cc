@@ -86,6 +86,91 @@ int Rpc::send_reqs(int coro_id)
 	return 0;	/* Success, even though we don't have a fail case */
 }
 
+
+
+int Rpc::send_reqs(int coro_id, bool _dam)
+{
+#if RPC_MSR_MAX_BATCH_LATENCY == 1
+	/* Record the start time of this request batch */
+	clock_gettime(CLOCK_REALTIME, &max_batch_lat_start[coro_id]);
+#endif
+
+	rpc_dassert(coro_id > 0 && coro_id < info.num_coro);
+
+	rpc_req_batch_t *req_batch = &req_batch_arr[coro_id];
+
+	int num_uniq_mn = req_batch->num_uniq_mn;
+	rpc_dassert(num_uniq_mn >= 1 && num_uniq_mn <= RPC_MAX_MSG_CORO);
+	stat_num_creqs += num_uniq_mn;
+
+	/* Bookkeeping */
+	int wr_i = 0;
+	struct ibv_send_wr *bad_wr;
+
+	for(int msg_i = 0; msg_i < num_uniq_mn; msg_i++) {
+		rpc_cmsg_t *cmsg = &req_batch->cmsg_arr[msg_i];
+#if RPC_DEBUG_ASSERT == 1
+		check_coalesced_msg(cmsg->req_mbuf.alloc_buf, cmsg->num_centry);
+#endif
+		int resp_mn = cmsg->remote_mn;
+
+		/* Verify constant @sgl and @wr fields */
+		rpc_dassert(send_sgl[wr_i].lkey == lkey);
+		rpc_dassert(send_wr[wr_i].next == &send_wr[wr_i + 1]); /* +1 is valid */
+		rpc_dassert(send_wr[wr_i].wr.ud.remote_qkey == HRD_DEFAULT_QKEY);
+		rpc_dassert(send_wr[wr_i].opcode == IBV_WR_SEND_WITH_IMM);
+		rpc_dassert(send_wr[wr_i].num_sge == 1);
+		rpc_dassert(send_wr[wr_i].sg_list == &send_sgl[wr_i]);
+
+		/* Encode variable fields */
+		send_sgl[wr_i].length = cmsg->req_mbuf.length();
+		rpc_dassert(send_sgl[wr_i].length <= info.max_pkt_size);
+		send_sgl[wr_i].addr = (uint64_t) cmsg->req_mbuf.alloc_buf;
+
+		send_wr[wr_i].wr.ud.ah = ah[resp_mn];
+		send_wr[wr_i].wr.ud.remote_qpn = rem_qpn[resp_mn];
+		send_wr[wr_i].send_flags = set_flags(active_qp, send_sgl[wr_i].length);
+
+		/* Encode immediate */
+		union rpc_imm imm;
+		imm.is_req = 2; // DAM for delegated requests
+		imm.num_reqs = cmsg->num_centry;
+		imm.mchn_id = info.machine_id;	/* This machine's ID */
+		imm.coro_id = coro_id;
+		imm.config_id = 0;	/* XXX */
+		check_imm(imm);	/* Sanity check other fields */
+
+		send_wr[wr_i].imm_data = imm.int_rep;	/* Copy int representation */
+
+		rpc_dprintf("Rpc: Worker %d, coro %d sending request (batch) to "
+			"machine %d via QP %d, size = %d\n",
+			info.wrkr_gid, coro_id, resp_mn, active_qp, send_sgl[wr_i].length);
+
+		wr_i++;
+
+		/* Actually send requests. @wr_i = total number of messages assembled */
+		if(wr_i == info.postlist || msg_i == num_uniq_mn - 1) {
+			rpc_dassert(wr_i > 0 && wr_i <= RPC_MAX_POSTLIST); /* Need > 0 */
+			send_wr[wr_i - 1].next = NULL;	/* Breaker of chains */
+
+			int ret = ibv_post_send(cb->dgram_qp[active_qp],
+				&send_wr[0], &bad_wr);
+			rpc_dassert_msg(ret == 0, "Rpc: ibv_post_send error\n");
+			rpc_stat_inc(stat_resp_post_send_calls, 1);
+
+			/* Reset */
+			send_wr[wr_i - 1].next = &send_wr[wr_i]; /* Restore chain; safe. */
+			wr_i = 0;	/* Reset to start of wr array */
+
+			HRD_MOD_ADD(active_qp, info.num_qps);
+			/* XXX: Should we calculate post_send() postlist stats here */
+		}
+	}
+
+	return 0;	/* Success, even though we don't have a fail case */
+}
+
+
 /*
  * Send a batch of >= 0 responses. Return 0 on success.
  * Unlike send_reqs(), @batch can contain multiple responses to the same remote
@@ -361,90 +446,286 @@ coro_id_t* Rpc::poll_comps()
 			/* Record coroutine progress for packet loss detection */
 			ld_num_resps_ever[_coro_id] += _num_reqs;
 		} else {
+
 			// Handle a new request
 			rpc_dassert(wc_len > 0);	/* Requests cannot be 0-byte */
 
-			/* Initialize a new RPC message for the master */
-			hots_mbuf_t *resp_mbuf = start_new_resp(_mchn_id, _num_reqs,
-				wc_imm.int_rep); /* Converts req Imm to response Imm */
+			if(is_req == 1){
+				
+					/* Initialize a new RPC message for the master */
+				hots_mbuf_t *resp_mbuf = start_new_resp(_mchn_id, _num_reqs,
+					wc_imm.int_rep); /* Converts req Imm to response Imm */
+	
+				/* Process the requests */
+				size_t wc_off = 0;	/* Offset into wc_buf */
+				rpc_cmsg_reqhdr_t *cmsg_reqhdr;
+	
+				//YALA: need to get all the requests and create readset and writset.
+	
+				for(int i = 0; i < (int) _num_reqs; i++) {
+					rpc_dassert(is_aligned(wc_off, sizeof(rpc_cmsg_reqhdr_t)));
+					rpc_dassert(is_aligned(resp_mbuf->cur_buf,
+						sizeof(rpc_cmsg_reqhdr_t)));
+	
+					/* Unmarshal the request header */
+					cmsg_reqhdr = (rpc_cmsg_reqhdr_t *) &wc_buf[wc_off];
+					rpc_dassert(cmsg_reqhdr->magic == RPC_CMSG_REQ_HDR_MAGIC);
+					uint32_t req_type = cmsg_reqhdr->req_type;
+					uint32_t req_len = cmsg_reqhdr->size;
+	
+					rpc_dprintf("Rpc: Worker %d received %s req from machine %d. "
+						"Size = %u (coalesced size = %lu, %d reqs)\n",
+						info.wrkr_gid,
+						rpc_type_to_string(cmsg_reqhdr->req_type).c_str(),
+						_mchn_id, cmsg_reqhdr->size, wc_len, (int) _num_reqs);
+	
+					/* Copy the request header to the response */
+					rpc_cmsg_reqhdr_t *cmsg_resphdr = (rpc_cmsg_reqhdr_t *)
+						resp_mbuf->cur_buf;
+					*((uint64_t *) cmsg_resphdr) = *(uint64_t *) cmsg_reqhdr; //copy
+					resp_mbuf->cur_buf += sizeof(rpc_cmsg_reqhdr_t);
+					wc_off += sizeof(rpc_cmsg_reqhdr_t);
+	
+					/* Invoke the handler */
+					rpc_dassert(rpc_handler[req_type] != NULL);
+	
+					size_t resp_len = rpc_handler[req_type](
+						resp_mbuf->cur_buf, &cmsg_resphdr->resp_type,
+						&wc_buf[wc_off], req_len, rpc_handler_arg[req_type]); //
+	
+					cmsg_resphdr->size = resp_len;	/* cmsg_resphdr is valid */
+	
+					rpc_dassert(is_aligned(resp_len, sizeof(uint64_t)));
+	
+					wc_off += req_len;
+					resp_mbuf->cur_buf += resp_len;
+	
+					/* Ensure that we don't overflow the response buffer */
+					rpc_dassert(resp_mbuf->length() <= resp_mbuf->alloc_len);
+				}
+	
+				rpc_dassert(wc_off == wc_len);	
 
-			 /* YALA only single respose is enough
-			    hots_mbuf_t *resp_mbuf = start_new_resp(_mchn_id, 1,
-				wc_imm.int_rep);
-		    */
 
-			/* Process the requests */
-			size_t wc_off = 0;	/* Offset into wc_buf */
-			rpc_cmsg_reqhdr_t *cmsg_reqhdr;
-
-			//YALA: need to get all the requests and create eadste and writset.
-
-			for(int i = 0; i < (int) _num_reqs; i++) {
-				rpc_dassert(is_aligned(wc_off, sizeof(rpc_cmsg_reqhdr_t)));
-				rpc_dassert(is_aligned(resp_mbuf->cur_buf,
-					sizeof(rpc_cmsg_reqhdr_t)));
-
-				/* Unmarshal the request header */
-				cmsg_reqhdr = (rpc_cmsg_reqhdr_t *) &wc_buf[wc_off];
-				rpc_dassert(cmsg_reqhdr->magic == RPC_CMSG_REQ_HDR_MAGIC);
-				uint32_t req_type = cmsg_reqhdr->req_type;
-				uint32_t req_len = cmsg_reqhdr->size;
-
-				rpc_dprintf("Rpc: Worker %d received %s req from machine %d. "
-					"Size = %u (coalesced size = %lu, %d reqs)\n",
-					info.wrkr_gid,
-					rpc_type_to_string(cmsg_reqhdr->req_type).c_str(),
-					_mchn_id, cmsg_reqhdr->size, wc_len, (int) _num_reqs);
-
-
-				// DAM only the first or the last message of the batch need to be attached with the respose.
-				// make sure that only one transaction from one machine is processed at one. batch can consis tof multiple batches. highly unlikely?.
-
-				/* Copy the request header to the response */
-				rpc_cmsg_reqhdr_t *cmsg_resphdr = (rpc_cmsg_reqhdr_t *)
-					resp_mbuf->cur_buf;
-				*((uint64_t *) cmsg_resphdr) = *(uint64_t *) cmsg_reqhdr; //copy
-				resp_mbuf->cur_buf += sizeof(rpc_cmsg_reqhdr_t);
-				wc_off += sizeof(rpc_cmsg_reqhdr_t);
-
-				//DAM
-				/*recreate the read-set and write-set*/
-
-				/*invoke a handler for the transaction which does the two phase locking.
-				(logging and replication can be used in case memory fails fully or partially. for fully failure logless protocols can be used)*/
-
-    			//change the RPC layer to send and proecss transaction as a whole
-
-    			//send a number of items in the transactions to here and then we can chekc if all the keys have arrived.
-    			//
-
-				/* Invoke the handler */
-				rpc_dassert(rpc_handler[req_type] != NULL);
-
-				//YALA only need to get the respose and accumulate them. slave coroutines on the memory side can be used.
-				//single master may not enough.
-
-				//call the new handler, pass a vector.
-
-				size_t resp_len = rpc_handler[req_type](
-					resp_mbuf->cur_buf, &cmsg_resphdr->resp_type,
-					&wc_buf[wc_off], req_len, rpc_handler_arg[req_type]); //
-
-				cmsg_resphdr->size = resp_len;	/* cmsg_resphdr is valid */
-
-				//YALA - iterate over .we can send the respose to the first or the last request of the packet
-
-				rpc_dassert(is_aligned(resp_len, sizeof(uint64_t)));
-
-				wc_off += req_len;
-				resp_mbuf->cur_buf += resp_len;
-
-				/* Ensure that we don't overflow the response buffer */
-				rpc_dassert(resp_mbuf->length() <= resp_mbuf->alloc_len);
 			}
 
-			rpc_dassert(wc_off == wc_len);
+			else{ //DAM delegate request. first lock and then commit out of the critical path.
 
+				/* Initialize a new RPC message for the master */
+				hots_mbuf_t *resp_mbuf = start_new_resp(_mchn_id, _num_reqs,
+					wc_imm.int_rep); /* Converts req Imm to response Imm */
+	
+				 /* YALA only single respose is enough
+				    hots_mbuf_t *resp_mbuf = start_new_resp(_mchn_id, 1,
+					wc_imm.int_rep);
+		    	*/
+	
+				/* Process the requests */
+				size_t wc_off = 0;	/* Offset into wc_buf */		
+				rpc_cmsg_reqhdr_t *cmsg_reqhdr;	
+				bool tx_failed=false;
+	
+				//YALA: need to get all the requests and create readset and writset. next lock them.    
+				//Step-1: RTT to lock all the places and get the response.
+            	for(int i = 0; i < (int) _num_reqs; i++) {
+					rpc_dassert(is_aligned(wc_off, sizeof(rpc_cmsg_reqhdr_t)));
+					rpc_dassert(is_aligned(resp_mbuf->cur_buf,
+						sizeof(rpc_cmsg_reqhdr_t)));
+	
+					/* Unmarshal the request header */
+					cmsg_reqhdr = (rpc_cmsg_reqhdr_t *) &wc_buf[wc_off];
+					rpc_dassert(cmsg_reqhdr->magic == RPC_CMSG_REQ_HDR_MAGIC);
+					uint32_t req_type = cmsg_reqhdr->req_type;
+					uint32_t req_len = cmsg_reqhdr->size;
+	
+					rpc_dprintf("Rpc: Worker %d received %s req from machine %d. "
+						"Size = %u (coalesced size = %lu, %d reqs)\n",
+						info.wrkr_gid,
+						rpc_type_to_string(cmsg_reqhdr->req_type).c_str(),
+						_mchn_id, cmsg_reqhdr->size, wc_len, (int) _num_reqs);
+	
+	
+					// DAM only the first or the last message of the batch need to be attached with the respose.
+					// make sure that only one transaction from one machine is processed at one. batch can consis tof multiple batches. highly unlikely?.
+	
+					/* Copy the request header to the response */
+					rpc_cmsg_reqhdr_t *cmsg_resphdr = (rpc_cmsg_reqhdr_t *)	resp_mbuf->cur_buf;
+					*((uint64_t *) cmsg_resphdr) = *(uint64_t *) cmsg_reqhdr; //copy
+					resp_mbuf->cur_buf += sizeof(rpc_cmsg_reqhdr_t);
+					wc_off += sizeof(rpc_cmsg_reqhdr_t);
+	
+					//DAM
+					/*recreate the read-set and write-set*/	
+					/*invoke a handler for the transaction which does the two phase locking.
+					(logging and replication can be used in case memory fails fully or partially. for fully failure logless protocols can be used)*/
+	    				//change the RPC layer to send and proecss transaction as a whole
+	    				//send a number of items in the transactions to here and then we can chekc if all the keys have arrived.
+    				//
+	
+					/* Invoke the handler */
+					rpc_dassert(rpc_handler[req_type] != NULL);
+	
+					//DAM only need to get the respose and accumulate them. slave coroutines on the memory side can be used.
+					//single master may not enough.
+	
+					//call the new handler, pass a vector.
+					ds_generic_get_req_t *_req = (ds_generic_get_req_t *) &wc_buf[wc_off];
+					ds_reqtype_t _req_type = static_cast<ds_reqtype_t>(_req->req_type);
+
+		
+					// changed the use cases to match get_for_upd and lock_for_ins	
+					size_t resp_len = rpc_handler[req_type](
+						resp_mbuf->cur_buf, &cmsg_resphdr->resp_type,
+						&wc_buf[wc_off], req_len, rpc_handler_arg[req_type]); //
+	
+					cmsg_resphdr->size = resp_len;	/* cmsg_resphdr is valid */
+
+					if(!resp_len) tx_failed=true;
+	
+					//YALA - iterate over.we can send the respose to the first or the last request of the packet
+	
+					rpc_dassert(is_aligned(resp_len, sizeof(uint64_t)));
+	
+					wc_off += req_len;
+					resp_mbuf->cur_buf += resp_len;
+	
+					/* Ensure that we don't overflow the response buffer */
+					rpc_dassert(resp_mbuf->length() <= resp_mbuf->alloc_len);
+				
+				}// First round of locking is done.				
+            	
+
+				//if(tx_failed) continue; // still need to unlock rd_only and wrd-wr set. if validation can be done during the first round, no need to lock those rd_only data.
+				
+
+				//Step-2 ; compare and unlocking and updating put/insert values. 
+				// if the transaction fails, only need to unlock. no updates. 
+
+
+            	size_t wc_off = 0;	
+            	//should happen out of the cricitcal path. 
+				for(int i = 0; i < (int) _num_reqs; i++) {
+					rpc_dassert(is_aligned(wc_off, sizeof(rpc_cmsg_reqhdr_t)));
+					rpc_dassert(is_aligned(resp_mbuf->cur_buf,
+						sizeof(rpc_cmsg_reqhdr_t)));
+	
+					/* Unmarshal the request header */
+					cmsg_reqhdr = (rpc_cmsg_reqhdr_t *) &wc_buf[wc_off];
+					rpc_dassert(cmsg_reqhdr->magic == RPC_CMSG_REQ_HDR_MAGIC);
+					uint32_t req_type = cmsg_reqhdr->req_type;
+					uint32_t req_len = cmsg_reqhdr->size;
+	
+					rpc_dprintf("Rpc: Worker %d received %s req from machine %d. "
+						"Size = %u (coalesced size = %lu, %d reqs)\n",
+						info.wrkr_gid,
+						rpc_type_to_string(cmsg_reqhdr->req_type).c_str(),
+						_mchn_id, cmsg_reqhdr->size, wc_len, (int) _num_reqs);	
+	
+					// DAM only the first or the last message of the batch need to be attached with the respose.
+					// make sure that only one transaction from one machine is processed at one. batch can consist of multiple batches. highly unlikely?.
+	
+					/* Copy the request header to the response */
+					rpc_cmsg_reqhdr_t *cmsg_resphdr = (rpc_cmsg_reqhdr_t *)
+						resp_mbuf->cur_buf;
+					*((uint64_t *) cmsg_resphdr) = *(uint64_t *) cmsg_reqhdr; //copy
+					resp_mbuf->cur_buf += sizeof(rpc_cmsg_reqhdr_t);
+					wc_off += sizeof(rpc_cmsg_reqhdr_t);
+	
+					//DAM
+					/*recreate the read-set and write-set*/
+	
+					/*invoke a handler for the transaction which does the two phase locking.
+					(logging and replication can be used in case memory fails fully or partially. for fully failure logless protocols can be used)*/
+	
+    				//change the RPC layer to send and proecss transaction as a whole
+	
+    				//send a number of items in the transactions to here and then we can chekc if all the keys have arrived.
+    				//
+	
+					/* Invoke the handler */
+					rpc_dassert(rpc_handler[req_type] != NULL);
+	
+					//YALA only need to get the respose and accumulate them. slave coroutines on the memory side can be used.
+					//single master may not enough.
+	
+					//call the new handler, pass a vector.
+
+					s_generic_get_req_t *_req = (ds_generic_get_req_t *) &wc_buf[wc_off];
+					ds_reqtype_t _req_type = static_cast<ds_reqtype_t>(_req->req_type);
+
+					if(tx_failed){
+						switch(_req_type){
+							case ds_reqtype_t::rd_only_dam: {
+								_req->req_type = ds_reqtype_t::unlock;
+								break;
+							}
+							case ds_reqtype_t::put_dam:{
+								_req->req_type = ds_reqtype_t::unlock;
+								break;
+							}
+							case ds_reqtype_t::insert_dam:{
+								_req->req_type = ds_reqtype_t::unlock;
+								break;
+							}
+							case ds_reqtype_t::del_dam:{
+								_req->req_type = ds_reqtype_t::unlock;
+								break;
+							}
+							default:{
+								break;
+							}	
+						}
+					}
+					else{
+						switch(_req_type){
+
+							//need to match the read version.
+							case ds_reqtype_t::rd_only_dam: {
+								_req->req_type = ds_reqtype_t::unlock;
+								//read version comparison can be done in the first round trip. 
+								break;
+							}
+							case ds_reqtype_t::put_dam:{
+								_req->req_type = ds_reqtype_t::put;
+								break;
+							}
+							case ds_reqtype_t::insert_dam:{
+								_req->req_type = ds_reqtype_t::put; // insert is put when lock succeed.
+								break;
+							}
+							case ds_reqtype_t::del_dam:{
+								_req->req_type = ds_reqtype_t::del;
+								break;
+							}
+							default:{
+
+							}
+						}
+
+					}
+
+					//cannot use the same respone buffer as the first one.
+					size_t resp_len = rpc_handler[req_type](
+						resp_mbuf->cur_buf, &cmsg_resphdr->resp_type,
+						&wc_buf[wc_off], req_len, rpc_handler_arg[req_type]); //
+	
+					cmsg_resphdr->size = resp_len;	/* cmsg_resphdr is valid */
+	
+					//YALA - iterate over .we can send the respose to the first or the last request of the packet
+	
+					rpc_dassert(is_aligned(resp_len, sizeof(uint64_t)));
+	
+					wc_off += req_len;
+					resp_mbuf->cur_buf += resp_len;
+	
+					/* Ensure that we don't overflow the response buffer */
+					rpc_dassert(resp_mbuf->length() <= resp_mbuf->alloc_len);
+				}
+	
+					rpc_dassert(wc_off == wc_len);
+	
+				
+			}//DAM delegate request end
 
 			//we can do comit validate and a;l the steps here.
 			//careful with memory access timing for locking and validate. becuase its not synchronous in ASICS.
@@ -499,3 +780,4 @@ coro_id_t* Rpc::poll_comps()
 
 	return next_coro;
 }
+

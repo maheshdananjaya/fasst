@@ -127,6 +127,7 @@ forceinline size_t ds_fixedtable_rpc_handler(
 		return 0;
 	}
 
+
 	case ds_reqtype_t::del : {
 		ds_dassert(req_len == sizeof(ds_generic_get_req_t));
 		out_result = table->del(caller_id, keyhash, key);
@@ -164,6 +165,121 @@ forceinline size_t ds_fixedtable_rpc_handler(
 		*resp_type = (uint16_t) ds_resptype_t::put_success;
 		return 0;
 	}
+
+
+	//DAM delegate cases, 
+	
+	//DAM Get_for_upd TODO read version comaprison when locking. otherwise return failed.
+	case ds_reqtype_t::get_rdonly_dam : {  
+		ds_dassert(req_len == sizeof(ds_generic_get_req_t));
+		out_result = table->lock_bkt_and_get(caller_id, keyhash,
+			key, _hdr, _val_buf);
+
+		if(out_result == MicaResult::kSuccess) {
+			ds_fixedtable_printf("DS FixedTable: get_rdonly_dam request for "
+				"key %lu. Success.\n", key);
+
+			*resp_type = (uint16_t) ds_resptype_t::get_rdonly_success;
+
+
+			return sizeof(hots_hdr_t) + table->val_size; /* Header + value */
+		} else if (out_result == MicaResult::kLocked) {
+			/* The object was locked */
+			ds_fixedtable_printf("DS FixedTable: get_rdonly_dam request for "
+				"key %lu. Failure = get_for_upd_locked\n", key);
+			*resp_type = (uint16_t) ds_resptype_t::get_rdonly_locked;
+			return 0;	/* Must abort */
+		} else {
+			ds_dassert(out_result == MicaResult::kNotFound);
+			/* The object did not exist */
+			ds_fixedtable_printf("DS FixedTable: get_rdonly_dam request for "
+				"key %lu. Failure = get_for_upd_not_found\n", key);
+			*resp_type = (uint16_t) ds_resptype_t::get_rdonly_not_found;
+			return 0;	/* Must abort */
+		}
+	}
+
+	//DAM assumptions: all writes read the data first. so need to be validated in the 1st round trip
+	case ds_reqtype_t::put_dam : { // Get_for_upd
+		ds_dassert(req_len == sizeof(ds_generic_get_req_t));
+		out_result = table->lock_bkt_and_get(caller_id, keyhash,
+			key, _hdr, _val_buf);
+
+		if(out_result == MicaResult::kSuccess) {
+			ds_fixedtable_printf("DS FixedTable: put_dam request for "
+				"key %lu. Success.\n", key);
+
+			*resp_type = (uint16_t) ds_resptype_t::put_success;
+			return sizeof(hots_hdr_t) + table->val_size; /* Header + value */
+		} else if (out_result == MicaResult::kLocked) {
+			/* The object was locked */
+			ds_fixedtable_printf("DS FixedTable: put_dam request for "
+				"key %lu. Failure = get_for_upd_locked\n", key);
+			*resp_type = (uint16_t) ds_resptype_t::failed;
+			return 0;	/* Must abort */
+		} else {
+			ds_dassert(out_result == MicaResult::kNotFound);
+			/* The object did not exist */
+			ds_fixedtable_printf("DS FixedTable: put_dam request for "
+				"key %lu. Failure = get_for_upd_not_found\n", key);
+			*resp_type = (uint16_t) ds_resptype_t::failed;
+			return 0;	/* Must abort */
+		}
+	}
+
+	//DAM- no need to validae. just lock
+	case ds_reqtype_t::del_dam : { // Get_for_upd
+		ds_dassert(req_len == sizeof(ds_generic_get_req_t));
+		out_result = table->lock_bkt_and_get(caller_id, keyhash,
+			key, _hdr, _val_buf);
+
+		if(out_result == MicaResult::kSuccess) {
+			ds_fixedtable_printf("DS FixedTable: del_dam request for "
+				"key %lu. Success.\n", key);
+
+			*resp_type = (uint16_t) ds_resptype_t::del_success;
+			return sizeof(hots_hdr_t) + table->val_size; /* Header + value */
+		} else if (out_result == MicaResult::kLocked) {
+			/* The object was locked */
+			ds_fixedtable_printf("DS FixedTable: del_dam request for "
+				"key %lu. Failure = get_for_upd_locked\n", key);
+			*resp_type = (uint16_t) ds_resptype_t::failed;
+			return 0;	/* Must abort */
+		} else {
+			ds_dassert(out_result == MicaResult::kNotFound);
+			/* The object did not exist */
+			ds_fixedtable_printf("DS FixedTable: del_dam request for "
+				"key %lu. Failure = get_for_upd_not_found\n", key);
+			*resp_type = (uint16_t) ds_resptype_t::failed;
+			return 0;	/* Must abort */
+		}
+	}
+
+	case ds_reqtype_t::insert_dam : {
+		ds_dassert(req_len == sizeof(ds_generic_get_req_t));
+
+		out_result = table->lock_bkt_for_ins(caller_id, keyhash, key, _hdr);
+
+		if(out_result == MicaResult::kSuccess) {
+			ds_fixedtable_printf("DS FixedTable: insert_dam request for "
+				"key %lu. Success.\n", key);
+			*resp_type = (uint16_t) ds_resptype_t::insert_success;
+			return sizeof(hots_hdr_t); /* The coordinator needs the header */
+		} else if(out_result == MicaResult::kExists) {
+			/* The key already existed */
+			ds_fixedtable_printf("DS FixedTable: insert_dam request for "
+				"key %lu. Failure = lock_for_ins_exists\n", key);
+			*resp_type = (uint16_t) ds_resptype_t::failed;
+			return 0;	/* Must abort */
+		} else {
+			ds_dassert(out_result == MicaResult::kLocked);
+			ds_fixedtable_printf("DS FixedTable: insert_dam request for "
+				"key %lu. Failure = lock_for_ins_locked\n", key);
+			*resp_type = (uint16_t) ds_resptype_t::failed;
+			return 0;	/* Must abort */
+		}
+	}
+
 
 	default: {
 		fprintf(stderr, "HoTS: unknown datastore request type %u. Exiting.\n",

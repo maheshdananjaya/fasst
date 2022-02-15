@@ -35,11 +35,13 @@ enum class ds_reqtype_t {
 
 	// Sent using generic PUT request
 	put,	/* Insert or update */ 
-	
+	insert, //new insert operation for DAM
+
     delegate_dam, // for dam
-    get_rdonly_dam,
+    get_rdonly_dam, 
     put_dam,
     del_dam,
+    insert_dam,
 	/*
 	 * Max 16 req types (4 bits) because of bitfield sizing in
 	 * ds_generic_get_req_t and ds_generic_put_req_t. The RPC subsystem's header
@@ -66,8 +68,11 @@ enum class ds_resptype_t {
 
 	put_success,
 	del_success,
+	insert_success, //DAM
 
-	commit_success, //for DAM
+	failed,
+
+	//commit_success, //for DAM
 
 	/* Max 16 resp types (4 bits). See comment for ds_reqtype_t above. */
 };
@@ -197,7 +202,6 @@ forceinline size_t ds_forge_generic_get_req(rpc_req_t *rpc_req,
 		gg_req->req_type = static_cast<uint64_t>(req_type);
 		gg_req->keyhash = keyhash;
 		gg_req->key = key;
-
 		return sizeof(ds_generic_get_req_t);
 	}
 }

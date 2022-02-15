@@ -13,7 +13,7 @@ Result FixedTable<StaticConfig>::set(uint32_t caller_id, uint64_t key_hash,
 
   // We must be holding the lock on this bucket at primaries.
   if(is_primary) {
-    assert(is_locked(bucket->timestamp));
+    assert(is_locked(bucket->timestamp)); // error happenes. 
     assert(bucket->locker_id == caller_id);
   }
 

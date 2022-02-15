@@ -3,6 +3,7 @@
 
 /* Read keys */
 forceinline tx_status_t Tx::do_read(coro_yield_t &yield)
+
 {
 	tx_dassert(tx_status == tx_status_t::in_progress);
 
@@ -259,11 +260,12 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield, bool _dam)
 			/*size_req = ds_forge_generic_get_req(req, caller_id,
 				item.key, item.keyhash, ds_reqtype_t::get_for_upd);
 				*/
-			size_req = ds_forge_generic_get_req(req, caller_id,
-				item.key, item.keyhash, ds_reqtype_t::get_rdonly);
-		} 
 
-		//DAM never acquires locks for inserts.
+			// DAM assume read-write set to be RMWs. Otherwise this RTT can be saved 
+			size_req = ds_forge_generic_get_req(req, caller_id,
+				item.key, item.keyhash, ds_reqtype_t::get_rdonly);  
+		} 
+		//DAM never acquires locks for inserts. This will never be executed.
 		else {
 			/* Insert */
 			/*size_req = ds_forge_generic_get_req(req, caller_id,
@@ -330,7 +332,7 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield, bool _dam)
 	for(size_t i = ws_index; i < write_set.size(); i++) {
 		tx_rwset_item_t &item = write_set[i];
 
-		if(item.write_mode == tx_write_mode_t::insert) continue;
+		if(item.write_mode == tx_write_mode_t::insert) continue; //DAM ignore inserts.
 		tx_dassert(item.write_mode != tx_write_mode_t::insert);
 
 		ds_resptype_t resp_type = (ds_resptype_t) tx_req_arr[req_i]->resp_type;
@@ -479,9 +481,20 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 		//Insert need s
         if(item.write_mode != tx_write_mode_t::del) {
 				/* Insert or update */
+        	if(item.write_mode == tx_write_mode_t::update){ 
+        	//Update
 				size_req = ds_forge_generic_put_req(req, caller_id,
-					item.key, item.keyhash, item.obj, ds_reqtype_t::put,(uint64_t) item.obj->hdr.version);
-			} else {
+					item.key, item.keyhash, item.obj, ds_reqtype_t::put,(uint64_t) item.obj->hdr.version); 
+			}
+			else{ 
+				// Insert
+				Tx_dassert(tem.write_mode == tx_write_mode_t::insert);
+				size_req = ds_forge_generic_put_req(req, caller_id,
+					item.key, item.keyhash, item.obj, ds_reqtype_t::insert,(uint64_t) item.obj->hdr.version); 
+			}	
+			
+		}
+		else {
 				/* Delete */
 				size_req = ds_forge_generic_get_req(req, caller_id,
 					item.key, item.keyhash, ds_reqtype_t::del, (uint64_t) item.obj->hdr.version);
@@ -512,7 +525,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 
 	tx_dassert(req_i > 0 && req_i <= RPC_MAX_MSG_CORO);
 
-	rpc->send_reqs(coro_id);
+	rpc->send_reqs(coro_id, true); // DAM : send delegate requests.
 	tx_yield(yield);
 
 	req_i = 0;
@@ -578,7 +591,8 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 
 		//DAM need an additional response type here to flag write-lock unsuccess.
 		//tx_dassert(resp_type == (uint16_t) ds_resptype_t::put_success || resp_type == (uint16_t) ds_resptype_t::del_success);
-        if (!(resp_type == (uint16_t) ds_resptype_t::put_success || resp_type == (uint16_t) ds_resptype_t::del_success)){
+        if (!(resp_type == (uint16_t) ds_resptype_t::put_success || resp_type == (uint16_t) ds_resptype_t::del_success 
+        	|| resp_type == (uint16_t) ds_resptype_t::insert_success)){
         	tx_status = tx_status_t::must_abort;	
         }
 		req_i++;

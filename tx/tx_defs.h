@@ -30,7 +30,7 @@
 enum class tx_write_mode_t {
 	ignore,	/* For read set */
 	update,
-	insert,
+	insert, // already there.
 	del,
 };
 
