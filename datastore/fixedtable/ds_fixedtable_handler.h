@@ -180,7 +180,7 @@ forceinline size_t ds_fixedtable_rpc_handler(
 				"key %lu. Success.\n", key);
 
 			//read-validation in the first round.
-			if(req->version == *_hdr){
+			if(req->_ver == *_hdr){
 				*resp_type = (uint16_t) ds_resptype_t::get_rdonly_success;
 				 return sizeof(hots_hdr_t) + table->val_size; /* Header + value */
 			}else{
@@ -216,7 +216,7 @@ forceinline size_t ds_fixedtable_rpc_handler(
 				"key %lu. Success.\n", key);
 
 			//read-validation for the read-write set
-			if(req->version == *_hdr){
+			if(req->_ver == *_hdr){
 				*resp_type = (uint16_t) ds_resptype_t::put_success;
 				 return sizeof(hots_hdr_t) + table->val_size; /* Header + value */
 			}else{
