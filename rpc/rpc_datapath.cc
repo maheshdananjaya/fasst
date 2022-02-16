@@ -450,7 +450,7 @@ coro_id_t* Rpc::poll_comps()
 			// Handle a new request
 			rpc_dassert(wc_len > 0);	/* Requests cannot be 0-byte */
 
-			if(is_req == 1){
+			if(_is_req == 1){
 				
 					/* Initialize a new RPC message for the master */
 				hots_mbuf_t *resp_mbuf = start_new_resp(_mchn_id, _num_reqs,
@@ -609,11 +609,11 @@ coro_id_t* Rpc::poll_comps()
 
 
 
-            	size_t wc_off = 0;	
+            	wc_off = 0;	
             	//should happen out of the cricitcal path. 
 				for(int i = 0; i < (int) _num_reqs; i++) {
 
-					resp_mbuf *dam_resp_mbuf;
+					resp_mbuf dam_resp_mbuf;
 					dam_resp_mbuf.alloc_len(info.max_pkt_size);
 					
 
