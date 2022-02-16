@@ -160,6 +160,7 @@ public:
 			cmsg_i = req_batch->cmsg_for_mc[resp_mn];
 		} else {
 			/* Start a fresh coalesced message */
+
 			rpc_dassert(req_batch->num_uniq_mn < RPC_MAX_MSG_CORO);
 
 			cmsg_i = req_batch->num_uniq_mn;
@@ -210,7 +211,7 @@ public:
 	/*
 	 * Start a new response for a machine that sent @num_reqs coalesced requests
 	 * with immediate = @req_imm.
-	 */
+	*/
 	forceinline hots_mbuf_t* start_new_resp(int req_mn,
 		int num_reqs, uint32_t req_imm)
 	{
@@ -239,6 +240,8 @@ public:
 
 		return resp_mbuf;
 	}
+
+
 
 	// Debug and statistics
 	static void initialize_dummy_args(struct rpc_args *args);

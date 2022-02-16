@@ -167,9 +167,9 @@ forceinline size_t ds_fixedtable_rpc_handler(
 	}
 
 
-	//DAM delegate cases, 
-	
+	//DAM delegate cases, 	
 	//DAM Get_for_upd TODO read version comaprison when locking. otherwise return failed.
+
 	case ds_reqtype_t::get_rdonly_dam : {  
 		ds_dassert(req_len == sizeof(ds_generic_get_req_t));
 		out_result = table->lock_bkt_and_get(caller_id, keyhash,
@@ -179,10 +179,16 @@ forceinline size_t ds_fixedtable_rpc_handler(
 			ds_fixedtable_printf("DS FixedTable: get_rdonly_dam request for "
 				"key %lu. Success.\n", key);
 
-			*resp_type = (uint16_t) ds_resptype_t::get_rdonly_success;
+			//read-validation in the first round.
+			if(req->version == *_hdr){
+				*resp_type = (uint16_t) ds_resptype_t::get_rdonly_success;
+				 return sizeof(hots_hdr_t) + table->val_size; /* Header + value */
+			}else{
+				*resp_type = (uint16_t) ds_resptype_t::get_rdonly_locked;
+				 return 0; /* Header + value */
+			}
+			
 
-
-			return sizeof(hots_hdr_t) + table->val_size; /* Header + value */
 		} else if (out_result == MicaResult::kLocked) {
 			/* The object was locked */
 			ds_fixedtable_printf("DS FixedTable: get_rdonly_dam request for "
@@ -209,8 +215,15 @@ forceinline size_t ds_fixedtable_rpc_handler(
 			ds_fixedtable_printf("DS FixedTable: put_dam request for "
 				"key %lu. Success.\n", key);
 
-			*resp_type = (uint16_t) ds_resptype_t::put_success;
-			return sizeof(hots_hdr_t) + table->val_size; /* Header + value */
+			//read-validation for the read-write set
+			if(req->version == *_hdr){
+				*resp_type = (uint16_t) ds_resptype_t::put_success;
+				 return sizeof(hots_hdr_t) + table->val_size; /* Header + value */
+			}else{
+				*resp_type = (uint16_t) ds_resptype_t::failed;
+				 return 0; /* Header + value */
+			}
+
 		} else if (out_result == MicaResult::kLocked) {
 			/* The object was locked */
 			ds_fixedtable_printf("DS FixedTable: put_dam request for "

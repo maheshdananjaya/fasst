@@ -602,12 +602,23 @@ coro_id_t* Rpc::poll_comps()
 				// if the transaction fails, only need to unlock. no updates. 
 
 
+				//dummy reponse buffer
+				rpc_cmsg_t dam_cmsg;
+				//resp_mbuf dam_resp_mbuf;
+				//dam_resp_mbuf.alloc_len(info.max_pkt_size);
+
+
+
             	size_t wc_off = 0;	
             	//should happen out of the cricitcal path. 
 				for(int i = 0; i < (int) _num_reqs; i++) {
+
+					resp_mbuf *dam_resp_mbuf;
+					dam_resp_mbuf.alloc_len(info.max_pkt_size);
+					
+
 					rpc_dassert(is_aligned(wc_off, sizeof(rpc_cmsg_reqhdr_t)));
-					rpc_dassert(is_aligned(resp_mbuf->cur_buf,
-						sizeof(rpc_cmsg_reqhdr_t)));
+					rpc_dassert(is_aligned(dam_resp_mbuf,sizeof(rpc_cmsg_reqhdr_t)));
 	
 					/* Unmarshal the request header */
 					cmsg_reqhdr = (rpc_cmsg_reqhdr_t *) &wc_buf[wc_off];
@@ -626,9 +637,10 @@ coro_id_t* Rpc::poll_comps()
 	
 					/* Copy the request header to the response */
 					rpc_cmsg_reqhdr_t *cmsg_resphdr = (rpc_cmsg_reqhdr_t *)
-						resp_mbuf->cur_buf;
+						dam_resp_mbuf->cur_buf;
 					*((uint64_t *) cmsg_resphdr) = *(uint64_t *) cmsg_reqhdr; //copy
-					resp_mbuf->cur_buf += sizeof(rpc_cmsg_reqhdr_t);
+					dam_resp_mbuf->cur_buf += sizeof(rpc_cmsg_reqhdr_t);
+
 					wc_off += sizeof(rpc_cmsg_reqhdr_t);
 	
 					//DAM
@@ -705,25 +717,26 @@ coro_id_t* Rpc::poll_comps()
 					}
 
 					//cannot use the same respone buffer as the first one.
+
+
 					size_t resp_len = rpc_handler[req_type](
-						resp_mbuf->cur_buf, &cmsg_resphdr->resp_type,
+						dam_resp_mbuf->cur_buf, &cmsg_resphdr->resp_type,
 						&wc_buf[wc_off], req_len, rpc_handler_arg[req_type]); //
 	
 					cmsg_resphdr->size = resp_len;	/* cmsg_resphdr is valid */
 	
-					//YALA - iterate over .we can send the respose to the first or the last request of the packet
+					//DAM - Iterate over. we can send the respose to the first or the last request of the packet
 	
 					rpc_dassert(is_aligned(resp_len, sizeof(uint64_t)));
 	
 					wc_off += req_len;
-					resp_mbuf->cur_buf += resp_len;
+					dam_resp_mbuf->cur_buf += resp_len;
 	
 					/* Ensure that we don't overflow the response buffer */
-					rpc_dassert(resp_mbuf->length() <= resp_mbuf->alloc_len);
+					rpc_dassert(dam_resp_mbuf->length() <= resp_mbuf->alloc_len);
 				}
 	
-					rpc_dassert(wc_off == wc_len);
-	
+					rpc_dassert(wc_off == wc_len);	
 				
 			}//DAM delegate request end
 
