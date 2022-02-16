@@ -568,11 +568,7 @@ coro_id_t* Rpc::poll_comps()
 					//DAM only need to get the respose and accumulate them. slave coroutines on the memory side can be used.
 					//single master may not enough.
 	
-					//call the new handler, pass a vector.
-					ds_generic_get_req_t *_req = (ds_generic_get_req_t *) &wc_buf[wc_off];
-					ds_reqtype_t _req_type = static_cast<ds_reqtype_t>(_req->req_type);
-
-		
+	
 					// changed the use cases to match get_for_upd and lock_for_ins	
 					size_t resp_len = rpc_handler[req_type](
 						resp_mbuf->cur_buf, &cmsg_resphdr->resp_type,
@@ -613,7 +609,7 @@ coro_id_t* Rpc::poll_comps()
             	//should happen out of the cricitcal path. 
 				for(int i = 0; i < (int) _num_reqs; i++) {
 
-					resp_mbuf dam_resp_mbuf;
+					hots_mbuf_t dam_resp_mbuf;
 					dam_resp_mbuf.alloc_len(info.max_pkt_size);
 					
 
@@ -662,7 +658,7 @@ coro_id_t* Rpc::poll_comps()
 	
 					//call the new handler, pass a vector.
 
-					s_generic_get_req_t *_req = (ds_generic_get_req_t *) &wc_buf[wc_off];
+					ds_generic_get_req_t *_req = (ds_generic_get_req_t *) &wc_buf[wc_off];
 					ds_reqtype_t _req_type = static_cast<ds_reqtype_t>(_req->req_type);
 
 					if(tx_failed){
