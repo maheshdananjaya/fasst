@@ -99,6 +99,7 @@ public:
 
 	// Datapath
 	int send_reqs(int coro_id);	/* Used by slave coro to send queued requests */
+	int send_reqs(int coro_id, bool _dam); // DAM- send request for delegate
 	int send_resps();	/* Used by master coroutine to flush queued responses */
 	coro_id_t* poll_comps();	/* Process RECVs; return completed coroutines */
 	void ld_check_packet_loss();
