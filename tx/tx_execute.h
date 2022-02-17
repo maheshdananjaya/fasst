@@ -484,20 +484,20 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
         	if(item.write_mode == tx_write_mode_t::update){ 
         	//Update
 				size_req = ds_forge_generic_put_req(req, caller_id,
-					item.key, item.keyhash, item.obj, ds_reqtype_t::put,(uint64_t) item.obj->hdr.version); 
+					item.key, item.keyhash, item.obj, ds_reqtype_t::put_dam,(uint64_t) item.obj->hdr.version); 
 			}
 			else{ 
 				// Insert
 				tx_dassert(item.write_mode == tx_write_mode_t::insert);
 				size_req = ds_forge_generic_put_req(req, caller_id,
-					item.key, item.keyhash, item.obj, ds_reqtype_t::insert,(uint64_t) item.obj->hdr.version); 
+					item.key, item.keyhash, item.obj, ds_reqtype_t::insert_dam,(uint64_t) item.obj->hdr.version); 
 			}	
 			
 		}
 		else {
 				/* Delete */
 				size_req = ds_forge_generic_get_req(req, caller_id,
-					item.key, item.keyhash, ds_reqtype_t::del, (uint64_t) item.obj->hdr.version);
+					item.key, item.keyhash, ds_reqtype_t::del_dam, (uint64_t) item.obj->hdr.version);
 		}
 
         
