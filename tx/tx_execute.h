@@ -488,7 +488,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 			}
 			else{ 
 				// Insert
-				Tx_dassert(item.write_mode == tx_write_mode_t::insert);
+				tx_dassert(item.write_mode == tx_write_mode_t::insert);
 				size_req = ds_forge_generic_put_req(req, caller_id,
 					item.key, item.keyhash, item.obj, ds_reqtype_t::insert,(uint64_t) item.obj->hdr.version); 
 			}	
