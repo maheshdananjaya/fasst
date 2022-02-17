@@ -715,7 +715,7 @@ coro_id_t* Rpc::poll_comps()
 
 					}
 
-					rpc_dprintf("Set request type %d", _req->req_type );
+					rpc_dprintf("Set request type %d", (int) _req->req_type );
 
 					//cannot use the same respone buffer as the first one.
 
