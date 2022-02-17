@@ -596,8 +596,8 @@ coro_id_t* Rpc::poll_comps()
 
 				//Step-2 ; compare and unlocking and updating put/insert values. 
 				// if the transaction fails, only need to unlock. no updates. 
-				rpc_dprintf("Rpc: Worker %d transaction status : %s \n",
-						info.wrkr_gid, tx_failed?"failed": "passed" );	
+				rpc_dprintf("Rpc: Worker %d transaction status : %d \n",
+						info.wrkr_gid, (tx_failed?0:1));	
 
 				//dummy reponse buffer
 				//rpc_cmsg_t dam_cmsg; //unused
@@ -661,7 +661,7 @@ coro_id_t* Rpc::poll_comps()
 					ds_reqtype_t _req_type = static_cast<ds_reqtype_t>(_req->req_type);
 
 					if(tx_failed){
-						rpc_dprintf("Transaction has failed");
+						rpc_dprintf("Transaction has failed. worker : %d ", info.wrkr_gid);
 
 						switch(_req_type){
 							case ds_reqtype_t::get_rdonly_dam: {
@@ -687,7 +687,7 @@ coro_id_t* Rpc::poll_comps()
 						}
 					}
 					else{
-						rpc_dprintf("Transaction has passed");
+						rpc_dprintf("Transaction has failed. worker : %d ", info.wrkr_gid);
 						switch(_req_type){
 
 							//need to match the read version.
