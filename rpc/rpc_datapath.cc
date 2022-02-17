@@ -599,7 +599,7 @@ coro_id_t* Rpc::poll_comps()
 
 
 				//dummy reponse buffer
-				rpc_cmsg_t dam_cmsg;
+				//rpc_cmsg_t dam_cmsg; //unused
 				//resp_mbuf dam_resp_mbuf;
 				//dam_resp_mbuf.alloc_len(info.max_pkt_size);
 
