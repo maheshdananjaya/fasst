@@ -609,7 +609,7 @@ coro_id_t* Rpc::poll_comps()
 
 					hots_mbuf_t *dam_resp_mbuf;
 					dam_resp_mbuf = (hots_mbuf_t*)malloc(sizeof(hots_mbuf_t)); 
-					dam_resp_mbuf.alloc(info.max_pkt_size);					
+					dam_resp_mbuf->alloc(info.max_pkt_size); //dummy response buffer.					
 
 					rpc_dassert(is_aligned(wc_off, sizeof(rpc_cmsg_reqhdr_t)));
 					rpc_dassert(is_aligned(&dam_resp_mbuf,sizeof(rpc_cmsg_reqhdr_t)));
@@ -661,20 +661,20 @@ coro_id_t* Rpc::poll_comps()
 
 					if(tx_failed){
 						switch(_req_type){
-							case ds_reqtype_t::rd_only_dam: {
-								_req->req_type = ds_reqtype_t::unlock;
+							case ds_reqtype_t::get_rdonly_dam: {
+								_req->req_type = (uint64_t) ds_reqtype_t::unlock;
 								break;
 							}
 							case ds_reqtype_t::put_dam:{
-								_req->req_type = ds_reqtype_t::unlock;
+								_req->req_type = (uint64_t) ds_reqtype_t::unlock;
 								break;
 							}
 							case ds_reqtype_t::insert_dam:{
-								_req->req_type = ds_reqtype_t::unlock;
+								_req->req_type = (uint64_t) ds_reqtype_t::unlock;
 								break;
 							}
 							case ds_reqtype_t::del_dam:{
-								_req->req_type = ds_reqtype_t::unlock;
+								_req->req_type = (uint64_t) ds_reqtype_t::unlock;
 								break;
 							}
 							default:{
@@ -686,21 +686,21 @@ coro_id_t* Rpc::poll_comps()
 						switch(_req_type){
 
 							//need to match the read version.
-							case ds_reqtype_t::rd_only_dam: {
-								_req->req_type = ds_reqtype_t::unlock;
+							case ds_reqtype_t::get_rdonly_dam: {
+								_req->req_type = (uint64_t) ds_reqtype_t::unlock;
 								//read version comparison can be done in the first round trip. 
 								break;
 							}
 							case ds_reqtype_t::put_dam:{
-								_req->req_type = ds_reqtype_t::put;
+								_req->req_type = (uint64_t) ds_reqtype_t::put;
 								break;
 							}
 							case ds_reqtype_t::insert_dam:{
-								_req->req_type = ds_reqtype_t::put; // insert is put when lock succeed.
+								_req->req_type = (uint64_t) ds_reqtype_t::put; // insert is put when lock succeed.
 								break;
 							}
 							case ds_reqtype_t::del_dam:{
-								_req->req_type = ds_reqtype_t::del;
+								_req->req_type = (uint64_t) ds_reqtype_t::del;
 								break;
 							}
 							default:{
