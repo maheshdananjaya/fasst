@@ -535,7 +535,7 @@ bool txn_delete_call_forwarding(coro_yield_t &yield, int coro_id, Tx *tx)
 		/*
 		 * Delete-mode write set records are handled using get_for_upd, so
 		 * we have a valid Call Forwarding record here.
-		 */
+		*/
 		auto *callfwd_val = (tatp_callfwd_val_t *) &callfwd_obj.val;
 		_unused(callfwd_val);
 		tatp_dassert(callfwd_val->numberx[0] == tatp_callfwd_numberx0_magic);

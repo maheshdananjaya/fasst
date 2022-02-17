@@ -576,7 +576,7 @@ coro_id_t* Rpc::poll_comps()
 	
 					cmsg_resphdr->size = resp_len;	/* cmsg_resphdr is valid */
 
-					if(!resp_len) tx_failed=true;
+					if(resp_len==0) tx_failed=true;
 	
 					//YALA - iterate over.we can send the respose to the first or the last request of the packet
 	
@@ -596,7 +596,8 @@ coro_id_t* Rpc::poll_comps()
 
 				//Step-2 ; compare and unlocking and updating put/insert values. 
 				// if the transaction fails, only need to unlock. no updates. 
-
+				rpc_dprintf("Rpc: Worker %d transaction status : %s \n",
+						info.wrkr_gid, tx_failed?"failed": "passed" );	
 
 				//dummy reponse buffer
 				//rpc_cmsg_t dam_cmsg; //unused
@@ -660,9 +661,12 @@ coro_id_t* Rpc::poll_comps()
 					ds_reqtype_t _req_type = static_cast<ds_reqtype_t>(_req->req_type);
 
 					if(tx_failed){
+						rpc_dprintf("Transaction has failed");
+
 						switch(_req_type){
 							case ds_reqtype_t::get_rdonly_dam: {
 								_req->req_type = (uint64_t) ds_reqtype_t::unlock;
+
 								break;
 							}
 							case ds_reqtype_t::put_dam:{
@@ -683,6 +687,7 @@ coro_id_t* Rpc::poll_comps()
 						}
 					}
 					else{
+						rpc_dprintf("Transaction has passed");
 						switch(_req_type){
 
 							//need to match the read version.
@@ -709,6 +714,8 @@ coro_id_t* Rpc::poll_comps()
 						}
 
 					}
+
+					rpc_dprintf("Set request type %d", _req->req_type );
 
 					//cannot use the same respone buffer as the first one.
 
