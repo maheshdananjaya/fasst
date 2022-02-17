@@ -603,18 +603,16 @@ coro_id_t* Rpc::poll_comps()
 				//resp_mbuf dam_resp_mbuf;
 				//dam_resp_mbuf.alloc_len(info.max_pkt_size);
 
-
-
             	wc_off = 0;	
             	//should happen out of the cricitcal path. 
 				for(int i = 0; i < (int) _num_reqs; i++) {
 
-					hots_mbuf_t dam_resp_mbuf;
-					dam_resp_mbuf.alloc_len(info.max_pkt_size);
-					
+					hots_mbuf_t *dam_resp_mbuf;
+					dam_resp_mbuf = (hots_mbuf_t*)malloc(sizeof(hots_mbuf_t)); 
+					dam_resp_mbuf.alloc(info.max_pkt_size);					
 
 					rpc_dassert(is_aligned(wc_off, sizeof(rpc_cmsg_reqhdr_t)));
-					rpc_dassert(is_aligned(dam_resp_mbuf,sizeof(rpc_cmsg_reqhdr_t)));
+					rpc_dassert(is_aligned(&dam_resp_mbuf,sizeof(rpc_cmsg_reqhdr_t)));
 	
 					/* Unmarshal the request header */
 					cmsg_reqhdr = (rpc_cmsg_reqhdr_t *) &wc_buf[wc_off];
