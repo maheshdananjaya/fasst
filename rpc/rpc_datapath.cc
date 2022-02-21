@@ -687,7 +687,7 @@ coro_id_t* Rpc::poll_comps()
 						}
 					}
 					else{
-						rpc_dprintf("Transaction has failed. worker : %d ", info.wrkr_gid);
+						rpc_dprintf("Transaction is SUccessful. worker : %d ", info.wrkr_gid);
 						switch(_req_type){
 
 							//need to match the read version.
@@ -734,7 +734,7 @@ coro_id_t* Rpc::poll_comps()
 					dam_resp_mbuf->cur_buf += resp_len;
 	
 					/* Ensure that we don't overflow the response buffer */
-					rpc_dassert(dam_resp_mbuf->length() <= resp_mbuf->alloc_len);
+					rpc_dassert(dam_resp_mbuf->length() <= dam_resp_mbuf->alloc_len);
 				}
 	
 					rpc_dassert(wc_off == wc_len);	

@@ -459,7 +459,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 		*/
         //DAM read version for DAM
 		size_t size_req = ds_forge_generic_get_req(req, caller_id,
-			item.key, item.keyhash, ds_reqtype_t::get_rdonly, (uint64_t) item.obj->hdr.version);
+			item.key, item.keyhash, ds_reqtype_t::get_rdonly_dam, (uint64_t) item.obj->hdr.version);
 
 		req->freeze(size_req);
 	}
@@ -601,68 +601,6 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 	}
 
 	num_resp = num_resp+req_i;
-
-	//}
-	//else{
-
-		//for(size_t i = ws_index; i < write_set.size(); i++) {
-		//	tx_rwset_item_t &item = write_set[i];
-		//	ds_resptype_t resp_type = (ds_resptype_t) tx_req_arr[req_i]->resp_type;	
-//
-//
-//
-		//	if(item.write_mode != tx_write_mode_t::insert) {
-		//		// Update or delete
-		//		switch(resp_type) {
-		//			case ds_resptype_t::get_for_upd_success:
-		//				tx_dassert(item.obj->hdr.locked == 1);
-	//
-	//
-		//				item.obj->val_size = 
-		//					tx_req_arr[req_i]->resp_len - sizeof(hots_hdr_t);
-		//				check_item(item); /* Checks @val_size */
-		//		
-		//				item.exec_ws_locked = true;	/* Mark for unlock on abort */
-		//				break;
-		//			case ds_resptype_t::get_for_upd_not_found:
-		//			case ds_resptype_t::get_for_upd_locked:
-		//				tx_dassert(tx_req_arr[req_i]->resp_len == 0);
-	//
-		//				item.exec_ws_locked = false;	/* Don't unlock on abort */
-		//				tx_status = tx_status_t::must_abort;
-		//				break;
-		//			default:
-		//				printf("Tx: Unknown response type %u for write set "
-		//					"(non-insert) key %" PRIu64 "\n.",
-		//					tx_req_arr[req_i]->resp_type, item.key);
-		//				exit(-1);
-		//		}
-		//	} else {
-		//		// Insert
-		//		switch(resp_type) {
-		//			case ds_resptype_t::lock_for_ins_success:
-		//				tx_dassert(item.obj->hdr.locked == 1);
-		//				tx_dassert(tx_req_arr[req_i]->resp_len ==
-		//					sizeof(hots_hdr_t));	/* Just the header */
-		//				item.exec_ws_locked = true;	/* Mark for delete on abort */
-		//				break;
-		//			case ds_resptype_t::lock_for_ins_exists:
-		//			case ds_resptype_t::lock_for_ins_locked:
-		//				tx_dassert(tx_req_arr[req_i]->resp_len == 0);
-		//				tx_status = tx_status_t::must_abort;
-		//				item.exec_ws_locked = false; /* Don't unlock on abort */
-		//				break;
-		//			default:
-		//				printf("Tx: Unknown response type %u for write set "
-		//					"(insert) key %" PRIu64 "\n.",
-		//					tx_req_arr[req_i]->resp_type, item.key);
-		//				exit(-1);
-		//		}
-		//	}
-	    //
-		//	req_i++;
-		//}
-
 
 	//} // end of the write-set
 
