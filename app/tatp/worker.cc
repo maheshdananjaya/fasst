@@ -538,6 +538,7 @@ bool txn_delete_call_forwarding(coro_yield_t &yield, int coro_id, Tx *tx)
 		*/
 		auto *callfwd_val = (tatp_callfwd_val_t *) &callfwd_obj.val;
 		_unused(callfwd_val);
+		
 		tatp_dassert(callfwd_val->numberx[0] == tatp_callfwd_numberx0_magic);
 
 		tatp_stat_inc(stat_tx_commit_attempted[txn_type], 1);

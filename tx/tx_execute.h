@@ -356,7 +356,7 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield, bool _dam)
 
 				//DAM ambigious case	
 				case ds_resptype_t::get_rdonly_not_found:
-					/* Txn need not be aborted if a rdonly key is not found. */
+					/* Txn need not be aborted if a rdonly key is not found. DAM - Not here baby!!!!!*/
 					tx_dassert(tx_req_arr[req_i]->resp_len == sizeof(uint64_t));
 	
 					item.obj->val_size = 0;
@@ -364,7 +364,8 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield, bool _dam)
 					/* Save fields needed for validation */
 					item.exec_rs_exists = false;
 					item.exec_rs_version = item.obj->hdr.version;
-					break;
+					tx_status = tx_status_t::must_abort; // transaction must abort if the delete/update key is not found.
+					break; 
 				case ds_resptype_t::get_rdonly_locked:
 					tx_dassert(tx_req_arr[req_i]->resp_len == 0);
 					tx_status = tx_status_t::must_abort;
@@ -398,6 +399,7 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield, bool _dam)
 					/* Save fields needed for validation */
 					item.exec_rs_exists = false;
 					item.exec_rs_version = item.obj->hdr.version;
+					//DAM never be called 
 				
 					break;
 
