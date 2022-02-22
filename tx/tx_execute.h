@@ -515,7 +515,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 	
 			/* Hdr for successfully read keys need not be locked (bkt collison) */
 			//DAM need tomlokc as well
-			if(!(resp_type == get_rdonly_success)){
+			if(resp_type != ds_resptype_t::get_rdonly_success){
 				tx_status = tx_status_t::must_abort;
 			}
 			
