@@ -198,7 +198,7 @@ forceinline size_t ds_forge_generic_get_req(rpc_req_t *rpc_req,
 		ds_generic_get_req_t *gg_req =
 			(ds_generic_get_req_t *) rpc_req->req_buf;
 		gg_req->_ver = _ver; // adding version number to get request for DAM	
-		gg_req->_unused = (uint32_t) rs_exist; // DAM used unused bits to flag if the key was found during the execution phase.
+		gg_req->unused = (uint32_t) rs_exist; // DAM used unused bits to flag if the key was found during the execution phase.
 		gg_req->caller_id = caller_id;
 		gg_req->req_type = static_cast<uint64_t>(req_type);
 		gg_req->keyhash = keyhash;

@@ -179,7 +179,7 @@ forceinline size_t ds_fixedtable_rpc_handler(
 			ds_fixedtable_printf("DS FixedTable: get_rdonly_dam request for "
 				"key %lu. Success.\n", key);
 
-			bool rs_exist= (bool) req->_unused;
+			bool rs_exist= (bool) req->unused;
 
 			//DAM TODO can optimize without locking here
 			if(!rs_exist){
