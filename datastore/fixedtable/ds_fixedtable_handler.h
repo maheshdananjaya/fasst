@@ -175,11 +175,11 @@ forceinline size_t ds_fixedtable_rpc_handler(
 		out_result = table->lock_bkt_and_get(caller_id, keyhash,
 			key, _hdr, _val_buf);
 
+		bool rs_exist= (bool) req->unused;
+
 		if(out_result == MicaResult::kSuccess) {
 			ds_fixedtable_printf("DS FixedTable: get_rdonly_dam request for "
-				"key %lu. Success.\n", key);
-
-			bool rs_exist= (bool) req->unused;
+				"key %lu. Success.\n", key);			
 
 			//DAM TODO can optimize without locking here
 			if(!rs_exist){
