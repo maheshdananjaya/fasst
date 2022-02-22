@@ -487,26 +487,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 		}
 
         
-	    ///* In the execute phase, update and delete keys are handled similarly */
-		//if(item.write_mode != tx_write_mode_t::insert) {
-		//	/* Update or delete */
-		//	/* size_req = ds_forge_generic_get_req(req, caller_id,
-		//		item.key, item.keyhash, ds_reqtype_t::get_for_upd); */
-		//
-		//	//DAM -  we need the version number as well as if the write was read before writing. not required for write only keys.
-		//	size_req = ds_forge_generic_put_req(req, caller_id,
-		//		item.key, item.keyhash, item.obj, ds_reqtype_t::get_for_upd, (uint64_t) item.obj->hdr.version); // we can use MSB to mark the writes that read.
-		//} else {
-		//	/* Insert */
-		//	/*size_req = ds_forge_generic_get_req(req, caller_id,
-		//		item.key, item.keyhash, ds_reqtype_t::lock_for_ins);*/
-		//	
-		//	// DAM - need to send the values
-		//	size_req = ds_forge_generic_put_req(req, caller_id,
-		//		item.key, item.keyhash, item.obj, ds_reqtype_t::lock_for_ins, (uint64_t) item.obj->hdr.version);
-		//}
-		
-		req->freeze(size_req);
+	   	req->freeze(size_req);
 	}
 
 	tx_dassert(req_i > 0 && req_i <= RPC_MAX_MSG_CORO);
@@ -534,41 +515,12 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 	
 			/* Hdr for successfully read keys need not be locked (bkt collison) */
 			//DAM need tomlokc as well
-			switch(resp_type) {
-				case ds_resptype_t::get_rdonly_success:
-					/* Response contains header and value */
-					item.obj->val_size =
-						tx_req_arr[req_i]->resp_len - sizeof(hots_hdr_t);
-					check_item(item);	/* Checks @val_size */
-	
-					/* Save fields needed for validation */
-					item.exec_rs_exists = true;
-					item.exec_rs_version = item.obj->hdr.version;
-					break;
-				case ds_resptype_t::get_rdonly_not_found:
-					/* Txn need not be aborted if a rdonly key is not found. */
-					tx_dassert(tx_req_arr[req_i]->resp_len == sizeof(uint64_t));
-	
-					item.obj->val_size = 0;
-	
-					/* Save fields needed for validation */
-					item.exec_rs_exists = false;
-					item.exec_rs_version = item.obj->hdr.version;
-					//Error: shouldn't the transaction be aborting?
-					break;
-				case ds_resptype_t::get_rdonly_locked:
-					tx_dassert(tx_req_arr[req_i]->resp_len == 0);
-					tx_status = tx_status_t::must_abort;
-					break;
-				default:
-					printf("Tx: Unknown response type %u for read set key "
-						"%" PRIu64 "\n.", tx_req_arr[req_i]->resp_type, item.key);
+			if(!(resp_type == get_rdonly_success)){
+				tx_status = tx_status_t::must_abort;
 			}
-	
+			
 			req_i++;
 		}
-
-
 
 		/* Check the responses */
 	for(size_t _req_i = 0; _req_i < write_set.size(); _req_i++) {
@@ -587,7 +539,6 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 	num_resp = num_resp+req_i;
 
 	//} // end of the write-set
-
 
 	tx_dassert(tx_status == tx_status_t::in_progress ||
 		tx_status == tx_status_t::must_abort);

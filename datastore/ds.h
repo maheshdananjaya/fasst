@@ -245,7 +245,10 @@ forceinline size_t ds_forge_generic_put_req(rpc_req_t *rpc_req,
 	uint32_t caller_id, hots_key_t key, uint64_t keyhash, hots_obj_t *obj,
 	ds_reqtype_t req_type, uint64_t _ver)
 {
-	ds_dassert(req_type == ds_reqtype_t::put);
+	ds_dassert(req_type == ds_reqtype_t::put || 
+		req_type == ds_reqtype_t::insert_dam ||
+		req_type == ds_reqtype_t:put_dam
+		);
 	
 	ds_dassert(rpc_req != NULL && rpc_req->req_buf != NULL);
 	ds_dassert(obj != NULL);
