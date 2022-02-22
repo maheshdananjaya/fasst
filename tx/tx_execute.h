@@ -510,7 +510,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 	//if(read_set.size() > 0){
 
 		for(size_t i = 0; i < read_set.size(); i++) {
-			tx_rwset_item_t &item = read_set[i];
+			//tx_rwset_item_t &item = read_set[i];
 			ds_resptype_t resp_type = (ds_resptype_t) tx_req_arr[req_i]->resp_type;
 	
 			/* Hdr for successfully read keys need not be locked (bkt collison) */
