@@ -353,7 +353,14 @@ bool txn_update_location(coro_yield_t &yield, int coro_id, Tx *tx)
 		sec_sub_key.hots_key, &sec_sub_obj);
 	tx_status_t ex_result = tx->do_read(yield, true);
 
-	tatp_dassert(ex_result == tx_status_t::in_progress);	/* Never locked */
+	
+	//tatp_dassert(ex_result == tx_status_t::in_progress);	/* Never locked */
+	//DAM - read only data can be blocked. opt ->  do not lock read only data.
+	if(ex_result != tx_status_t::in_progress) {
+		tx->abort_rdonly();
+		return false;
+	}
+
 	tatp_dassert(sec_sub_obj.val_size > 0);	/* Must exist */
 
 	tatp_sec_sub_val_t *sec_sub_val = (tatp_sec_sub_val_t *) sec_sub_obj.val;
@@ -416,7 +423,14 @@ bool txn_insert_call_forwarding(coro_yield_t &yield, int coro_id, Tx *tx)
 	tx->add_to_read_set(RPC_SEC_SUBSCRIBER_REQ,
 		sec_sub_key.hots_key, &sec_sub_obj);
 	tx_status_t ex_result = tx->do_read(yield, true);
-	tatp_dassert(ex_result == tx_status_t::in_progress);	/* Never locked */
+
+
+	//tatp_dassert(ex_result == tx_status_t::in_progress);	/* Never locked */
+	//DAM
+	if(ex_result != tx_status_t::in_progress) {
+		tx->abort_rdonly();
+		return false;
+	}
 
 	tatp_dassert(sec_sub_obj.val_size > 0);	/* Must exist */
 
@@ -538,7 +552,7 @@ bool txn_delete_call_forwarding(coro_yield_t &yield, int coro_id, Tx *tx)
 		*/
 		auto *callfwd_val = (tatp_callfwd_val_t *) &callfwd_obj.val;
 		_unused(callfwd_val);
-		
+
 		tatp_dassert(callfwd_val->numberx[0] == tatp_callfwd_numberx0_magic);
 
 		tatp_stat_inc(stat_tx_commit_attempted[txn_type], 1);
