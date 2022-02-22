@@ -483,7 +483,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 		else {
 				/* Delete */
 				size_req = ds_forge_generic_get_req(req, caller_id,
-					item.key, item.keyhash, ds_reqtype_t::del_dam, (uint64_t) item.obj->hdr.version);
+					item.key, item.keyhash, ds_reqtype_t::del_dam, (uint64_t) item.obj->hdr.version,  item.exec_rs_exists);
 		}
 
         
