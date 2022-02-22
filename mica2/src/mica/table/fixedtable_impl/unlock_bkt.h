@@ -20,10 +20,10 @@ Result FixedTable<StaticConfig>::unlock_bucket_hash(uint32_t caller_id,
   //DAM handle dam unlocking. avoid unlocking keys locked by other callers.
 
   //assert(bucket->locker_id == caller_id);
-  	if(bucket->locket_id  == caller_id){
+  	if(bucket->locker_id  == caller_id){
   		unlock_bucket_ptr(caller_id, bucket);
   	}
-  	
+
   return Result::kSuccess;
 }
 }
