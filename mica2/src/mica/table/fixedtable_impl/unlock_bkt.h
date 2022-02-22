@@ -16,7 +16,14 @@ Result FixedTable<StaticConfig>::unlock_bucket_hash(uint32_t caller_id,
 
   // unlock_bucket_ptr() will only release one lock if @caller_id holds multiple
   // locks on this bucket. It will also do sanity checks.
-  unlock_bucket_ptr(caller_id, bucket);
+
+  //DAM handle dam unlocking. avoid unlocking keys locked by other callers.
+
+  //assert(bucket->locker_id == caller_id);
+  	if(bucket->locket_id  == caller_id){
+  		unlock_bucket_ptr(caller_id, bucket);
+  	}
+  	
   return Result::kSuccess;
 }
 }
