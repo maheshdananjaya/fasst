@@ -5,7 +5,7 @@
 #include "rpc/rpc_defs.h"
 #include "datastore/ds.h"
 
-#define TX_DEBUG_PRINTF 0	/* Warning: prints on datapath */
+#define TX_DEBUG_PRINTF 1	/* Warning: prints on datapath */
 #define TX_COLLECT_STATS 1
 #define TX_CHECK_PACKET_LOSS 0
 
