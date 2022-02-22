@@ -181,7 +181,7 @@ forceinline size_t ds_forge_generic_get_req(rpc_req_t *rpc_req,
 }
 
 forceinline size_t ds_forge_generic_get_req(rpc_req_t *rpc_req,
-	uint32_t caller_id, hots_key_t key, uint64_t keyhash, ds_reqtype_t req_type, uint64_t _ver)
+	uint32_t caller_id, hots_key_t key, uint64_t keyhash, ds_reqtype_t req_type, uint64_t _ver, bool rs_exist)
 {
 	ds_dassert(req_type == ds_reqtype_t::get_rdonly ||
 		req_type == ds_reqtype_t::get_for_upd ||
@@ -198,6 +198,7 @@ forceinline size_t ds_forge_generic_get_req(rpc_req_t *rpc_req,
 		ds_generic_get_req_t *gg_req =
 			(ds_generic_get_req_t *) rpc_req->req_buf;
 		gg_req->_ver = _ver; // adding version number to get request for DAM	
+		gg_req->_unused = (uint32_t) rs_exist; // DAM used unused bits to flag if the key was found during the execution phase.
 		gg_req->caller_id = caller_id;
 		gg_req->req_type = static_cast<uint64_t>(req_type);
 		gg_req->keyhash = keyhash;

@@ -201,22 +201,6 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield, bool _dam)
 	tx_dassert(rs_index <= read_set.size());
 	tx_dassert(ws_index <= write_set.size());
 
-#if TX_ENABLE_LOCK_SERVER == 1
-	if(mappings->use_lock_server) {
-		tx_stat_inc(stat_lockserver_lock_req, 1);
-		bool lock_success = send_lockserver_req(yield,
-			locksrv_reqtype_t::lock);
-		if(!lock_success) {
-			tx_status = tx_status_t::must_abort;
-			return tx_status;
-		} else {
-			tx_stat_inc(stat_lockserver_lock_req_success, 1);
-			/* Record so we know whether to unlock on abort */
-			lockserver_locked = true;
-		}
-	}
-#endif
-
 	rpc->clear_req_batch(coro_id);
 	size_t req_i = 0;	/* Separate index bc we'll fetch both read, write set */
 	
@@ -457,9 +441,9 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 		/*size_t size_req = ds_forge_generic_get_req(req, caller_id,
 			item.key, item.keyhash, ds_reqtype_t::get_rdonly);
 		*/
-        //DAM read version for DAM
+        //DAM read version for DAM- (2) add read exist 
 		size_t size_req = ds_forge_generic_get_req(req, caller_id,
-			item.key, item.keyhash, ds_reqtype_t::get_rdonly_dam, (uint64_t) item.obj->hdr.version);
+			item.key, item.keyhash, ds_reqtype_t::get_rdonly_dam, (uint64_t) item.obj->hdr.version, item.obj->exec_rs_exists); 
 
 		req->freeze(size_req);
 	}

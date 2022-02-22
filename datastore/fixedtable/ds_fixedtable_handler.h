@@ -179,6 +179,15 @@ forceinline size_t ds_fixedtable_rpc_handler(
 			ds_fixedtable_printf("DS FixedTable: get_rdonly_dam request for "
 				"key %lu. Success.\n", key);
 
+			bool rs_exist= (bool) req->_unused;
+
+			//DAM TODO can optimize without locking here
+			if(!rs_exist){
+				 //key did not exsit by the time the transaction executed
+				*resp_type = (uint16_t) ds_resptype_t::get_rdonly_locked; //anything other than success is ok. transaction will abort.
+				 return 0;
+			}
+
 			//read-validation in the first round.
 			if(req->_ver == *_hdr){
 				*resp_type = (uint16_t) ds_resptype_t::get_rdonly_success;
@@ -200,8 +209,14 @@ forceinline size_t ds_fixedtable_rpc_handler(
 			/* The object did not exist */
 			ds_fixedtable_printf("DS FixedTable: get_rdonly_dam request for "
 				"key %lu. Failure = get_for_upd_not_found\n", key);
-			*resp_type = (uint16_t) ds_resptype_t::get_rdonly_not_found;
-			return 0;	/* Must abort */
+
+			if(!rs_exist){
+				*resp_type = (uint16_t) ds_resptype_t::get_rdonly_success;
+				 return sizeof(hots_hdr_t) + table->val_size; /* Header + value */
+			}
+			//else
+				*resp_type = (uint16_t) ds_resptype_t::get_rdonly_not_found;
+				return 0;	/* Must abort */
 		}
 	}
 

@@ -352,7 +352,6 @@ bool txn_update_location(coro_yield_t &yield, int coro_id, Tx *tx)
 	tx->add_to_read_set(RPC_SEC_SUBSCRIBER_REQ,
 		sec_sub_key.hots_key, &sec_sub_obj);
 	tx_status_t ex_result = tx->do_read(yield, true);
-
 	
 	//tatp_dassert(ex_result == tx_status_t::in_progress);	/* Never locked */
 	//DAM - read only data can be blocked. opt ->  do not lock read only data.
