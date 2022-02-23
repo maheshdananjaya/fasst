@@ -181,6 +181,8 @@ forceinline size_t ds_fixedtable_rpc_handler(
 			key, _hdr, _val_buf);
 
 		bool rs_exist= (bool) req->unused;
+		hots_hdr_t * _hdr_dam = (hots_hdr_t*)_hdr;
+
 
 		if(out_result == MicaResult::kSuccess) {
 			
@@ -195,7 +197,8 @@ forceinline size_t ds_fixedtable_rpc_handler(
 			}
 
 			//read-validation in the first round.
-			if(req->_ver == *_hdr){
+			if(req->_ver == (uint64_t)_hdr_dam->version){
+
 				ds_fixedtable_printf("DS FixedTable: get_rdonly_dam request for "
 				"key %lu. Success = key existed, version matched!.\n", key);	
 				*resp_type = (uint16_t) ds_resptype_t::get_rdonly_success;
@@ -241,10 +244,12 @@ forceinline size_t ds_fixedtable_rpc_handler(
 		out_result = table->lock_bkt_and_get(caller_id, keyhash,
 			key, _hdr, _val_buf);
 
+		hots_hdr_t * _hdr_dam = (hots_hdr_t*)_hdr;// get the current version number.
+
 		if(out_result == MicaResult::kSuccess) {		
 
 			//read-validation for the read-write set
-			if(req->_ver == *_hdr){
+			if(req->_ver == (uint64_t)_hdr_dam->version){
 				ds_fixedtable_printf("DS FixedTable: put_dam request for "
 				"key %lu. Success = version matched\n", key);
 				*resp_type = (uint16_t) ds_resptype_t::put_success;
@@ -273,7 +278,7 @@ forceinline size_t ds_fixedtable_rpc_handler(
 	}
 
 	//DAM- no need to validae. just lock
-	//assuming not read. so no read validation.
+	//assuming not read. so no read validation. TODO:add delete in to the reads.
 
 	case ds_reqtype_t::del_dam : { // Get_for_upd
 		ds_dassert(req_len == sizeof(ds_generic_get_req_t));
