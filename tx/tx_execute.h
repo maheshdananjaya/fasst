@@ -195,6 +195,8 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield)
 //DAM - Writes only needs to be read for RMWs. 
 forceinline tx_status_t Tx::do_read(coro_yield_t &yield, bool _dam)
 {
+	
+	printf("Delegate...%d \n", rpc->wrkr_gid);
 	tx_dassert(tx_status == tx_status_t::in_progress);
 
 	tx_dassert(read_set.size() + write_set.size() <= RPC_MAX_MSG_CORO);

@@ -17,7 +17,7 @@ int Rpc::send_reqs(int coro_id)
 
 	int num_uniq_mn = req_batch->num_uniq_mn;
 
-	rpc_dassert(num_uniq_mn >= 1 && num_uniq_mn <= RPC_MAX_MSG_CORO); //DAM -  Max outstanding messages per slave coroutine.
+	rpc_dassert(num_uniq_mn >= 1 && num_uniq_mn <= RPC_MAX_MSG_CORO); //DAM -  Max outstanding messages per slave coroutine. 
 
 	stat_num_creqs += num_uniq_mn;
 
@@ -665,7 +665,7 @@ coro_id_t* Rpc::poll_comps()
 					ds_reqtype_t _req_type = static_cast<ds_reqtype_t>(_req->req_type);
 
 					if(tx_failed){
-						rpc_dprintf("Transaction has failed. worker : %d ", info.wrkr_gid);
+						rpc_dprintf("Transaction has failed. worker : %d \n", info.wrkr_gid);
 
 						switch(_req_type){
 							case ds_reqtype_t::get_rdonly_dam: {
@@ -691,7 +691,7 @@ coro_id_t* Rpc::poll_comps()
 						}
 					}
 					else{
-						rpc_dprintf("Transaction is SUccessful. worker : %d ", info.wrkr_gid);
+						rpc_dprintf("Transaction is SUccessful. worker : %d \n", info.wrkr_gid);
 						switch(_req_type){
 
 							//need to match the read version.
@@ -719,7 +719,7 @@ coro_id_t* Rpc::poll_comps()
 
 					}
 
-					rpc_dprintf("Set request type %d", (int) _req->req_type );
+					rpc_dprintf("Set request type %d \n", (int) _req->req_type );
 
 					//cannot use the same respone buffer as the first one.
 

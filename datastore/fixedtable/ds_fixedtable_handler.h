@@ -125,6 +125,9 @@ forceinline size_t ds_fixedtable_rpc_handler(
 			exit(-1);
 		}
 
+		ds_fixedtable_printf("DS FixedTable: unlock request for "
+				"key %lu. Success.\n", key);
+
 		*resp_type = (uint16_t) ds_resptype_t::unlock_success;
 		return 0;
 	}
@@ -180,11 +183,12 @@ forceinline size_t ds_fixedtable_rpc_handler(
 		bool rs_exist= (bool) req->unused;
 
 		if(out_result == MicaResult::kSuccess) {
-			ds_fixedtable_printf("DS FixedTable: get_rdonly_dam request for "
-				"key %lu. Success.\n", key);			
-
+			
 			//DAM TODO can optimize without locking here
 			if(!rs_exist){
+
+				ds_fixedtable_printf("DS FixedTable: get_rdonly_dam request for "
+				"key %lu. Failure = key NOT existed!.\n", key);	
 				 //key did not exsit by the time the transaction executed
 				*resp_type = (uint16_t) ds_resptype_t::get_rdonly_locked; //anything other than success is ok. transaction will abort.
 				 return 0;
@@ -192,9 +196,13 @@ forceinline size_t ds_fixedtable_rpc_handler(
 
 			//read-validation in the first round.
 			if(req->_ver == *_hdr){
+				ds_fixedtable_printf("DS FixedTable: get_rdonly_dam request for "
+				"key %lu. Success = key existed, version matched!.\n", key);	
 				*resp_type = (uint16_t) ds_resptype_t::get_rdonly_success;
 				 return sizeof(hots_hdr_t) + table->val_size; /* Header + value */
 			}else{
+				ds_fixedtable_printf("DS FixedTable: get_rdonly_dam request for "
+				"key %lu. Failure = key existed, but version MISMATCH!.\n", key);
 				*resp_type = (uint16_t) ds_resptype_t::get_rdonly_locked;
 				 return 0; /* Header + value */
 			}
@@ -208,17 +216,20 @@ forceinline size_t ds_fixedtable_rpc_handler(
 			return 0;	/* Must abort */
 		} else {
 			ds_dassert(out_result == MicaResult::kNotFound);
-			/* The object did not exist */
-			ds_fixedtable_printf("DS FixedTable: get_rdonly_dam request for "
-				"key %lu. Failure = get_for_upd_not_found\n", key);
+			/* The object did not exist */			
 
 			if(!rs_exist){
+				ds_fixedtable_printf("DS FixedTable: get_rdonly_dam request for "
+				"key %lu. Success = key NOT existed. \n", key);
 				*resp_type = (uint16_t) ds_resptype_t::get_rdonly_success;
 				 return sizeof(hots_hdr_t) + table->val_size; /* Header + value */
 			}
-			//else
+			else{
+				ds_fixedtable_printf("DS FixedTable: get_rdonly_dam request for "
+				"key %lu. Failure = key existed, but no longer exists \n", key);
 				*resp_type = (uint16_t) ds_resptype_t::get_rdonly_not_found;
 				return 0;	/* Must abort */
+			}
 		}
 	}
 
@@ -230,15 +241,17 @@ forceinline size_t ds_fixedtable_rpc_handler(
 		out_result = table->lock_bkt_and_get(caller_id, keyhash,
 			key, _hdr, _val_buf);
 
-		if(out_result == MicaResult::kSuccess) {
-			ds_fixedtable_printf("DS FixedTable: put_dam request for "
-				"key %lu. Success.\n", key);
+		if(out_result == MicaResult::kSuccess) {		
 
 			//read-validation for the read-write set
 			if(req->_ver == *_hdr){
+				ds_fixedtable_printf("DS FixedTable: put_dam request for "
+				"key %lu. Success = version matched\n", key);
 				*resp_type = (uint16_t) ds_resptype_t::put_success;
 				 return sizeof(hots_hdr_t) + table->val_size; /* Header + value */
 			}else{
+				ds_fixedtable_printf("DS FixedTable: put_dam request for "
+				"key %lu. Failure = version MISMATCH\n", key);
 				*resp_type = (uint16_t) ds_resptype_t::failed;
 				 return 0; /* Header + value */
 			}
@@ -260,6 +273,8 @@ forceinline size_t ds_fixedtable_rpc_handler(
 	}
 
 	//DAM- no need to validae. just lock
+	//assuming not read. so no read validation.
+
 	case ds_reqtype_t::del_dam : { // Get_for_upd
 		ds_dassert(req_len == sizeof(ds_generic_get_req_t));
 		out_result = table->lock_bkt_and_get(caller_id, keyhash,
@@ -271,6 +286,7 @@ forceinline size_t ds_fixedtable_rpc_handler(
 
 			*resp_type = (uint16_t) ds_resptype_t::del_success;
 			return sizeof(hots_hdr_t) + table->val_size; /* Header + value */
+
 		} else if (out_result == MicaResult::kLocked) {
 			/* The object was locked */
 			ds_fixedtable_printf("DS FixedTable: del_dam request for "
