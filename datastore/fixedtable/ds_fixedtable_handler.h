@@ -112,7 +112,9 @@ forceinline size_t ds_fixedtable_rpc_handler(
 	}
 
 	case ds_reqtype_t::unlock : {
-		ds_dassert(req_len == sizeof(ds_generic_get_req_t));
+
+		//ds_dassert(req_len == sizeof(ds_generic_get_req_t)); - DAM commented out as puts are coming
+
 		out_result = table->unlock_bucket_hash(caller_id, keyhash);
 
 		if(unlikely(out_result != MicaResult::kSuccess)) {
