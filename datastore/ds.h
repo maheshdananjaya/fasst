@@ -188,6 +188,7 @@ forceinline size_t ds_forge_generic_get_req(rpc_req_t *rpc_req,
 		req_type == ds_reqtype_t::lock_for_ins ||
 		req_type == ds_reqtype_t::del ||
 		req_type == ds_reqtype_t::del_dam ||
+		req_type == ds_reqtype_t::get_rdonly_dam ||
 		req_type == ds_reqtype_t::unlock);
 
 	ds_dassert(rpc_req != NULL && rpc_req->req_buf != NULL);

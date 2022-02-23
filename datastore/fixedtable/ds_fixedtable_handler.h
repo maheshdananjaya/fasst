@@ -222,7 +222,8 @@ forceinline size_t ds_fixedtable_rpc_handler(
 
 	//DAM assumptions: all writes read the data first. so need to be validated in the 1st round trip
 	case ds_reqtype_t::put_dam : { // Get_for_upd
-		ds_dassert(req_len == sizeof(ds_generic_get_req_t));
+
+		ds_dassert(req_len == sizeof(ds_generic_put_req_t)); //DAM - not get, its put now.
 		out_result = table->lock_bkt_and_get(caller_id, keyhash,
 			key, _hdr, _val_buf);
 
