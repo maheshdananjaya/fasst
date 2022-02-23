@@ -221,7 +221,7 @@ public:
 		/* Copy over the request's immediate + modify some fields */
 		union rpc_imm resp_imm;
 		resp_imm.int_rep = req_imm;
-		rpc_dassert(resp_imm.is_req == 1);
+		rpc_dassert(resp_imm.is_req >= 1); // DAM +delegate requests
 		resp_imm.is_req = 0;	/* Convert to response type */
 		resp_imm.mchn_id = info.machine_id;
 
