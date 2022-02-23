@@ -16,7 +16,9 @@ int Rpc::send_reqs(int coro_id)
 	rpc_req_batch_t *req_batch = &req_batch_arr[coro_id];
 
 	int num_uniq_mn = req_batch->num_uniq_mn;
-	rpc_dassert(num_uniq_mn >= 1 && num_uniq_mn <= RPC_MAX_MSG_CORO);
+
+	rpc_dassert(num_uniq_mn >= 1 && num_uniq_mn <= RPC_MAX_MSG_CORO); //DAM -  Max outstanding messages per slave coroutine.
+
 	stat_num_creqs += num_uniq_mn;
 
 	/* Bookkeeping */

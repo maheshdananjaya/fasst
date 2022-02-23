@@ -266,6 +266,10 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield, bool _dam)
 	//DAM can invoke an isolated inserts: txn_insert_call_forwarding
 	tx_dassert(req_i >= 0 && req_i <= RPC_MAX_MSG_CORO);
 
+	if(req_i == 0) { //Handling isolated inserts that are not performed.
+		return tx_status;
+	}
+
 	rpc->send_reqs(coro_id);
 	tx_yield(yield);
 
