@@ -196,7 +196,7 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield)
 forceinline tx_status_t Tx::do_read(coro_yield_t &yield, bool _dam)
 {
 	
-	printf("Delegate...%d \n", rpc->get_wrkr_gid());
+	//printf("Delegate...%d \n", rpc->get_wrkr_gid());
 	tx_dassert(tx_status == tx_status_t::in_progress);
 
 	tx_dassert(read_set.size() + write_set.size() <= RPC_MAX_MSG_CORO);
