@@ -262,7 +262,9 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield, bool _dam)
 		req->freeze(size_req);
 	}
 
-	tx_dassert(req_i > 0 && req_i <= RPC_MAX_MSG_CORO);
+	//tx_dassert(req_i > 0 && req_i <= RPC_MAX_MSG_CORO);
+	//DAM can invoke an isolated inserts: txn_insert_call_forwarding
+	tx_dassert(req_i >= 0 && req_i <= RPC_MAX_MSG_CORO);
 
 	rpc->send_reqs(coro_id);
 	tx_yield(yield);
@@ -453,9 +455,11 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 		tx_rwset_item_t &item = write_set[i];
 
 		//DAM need puts
+		//rpc_req_t *req = rpc->start_new_req(coro_id, item.rpc_reqtype, item.primary_mn, (uint8_t *) item.obj->val, sizeof(uint64_t));
+
 		rpc_req_t *req = rpc->start_new_req(coro_id,
 			item.rpc_reqtype, item.primary_mn,
-			(uint8_t *) item.obj->val, sizeof(uint64_t));
+			(uint8_t *) &item.obj->hdr, sizeof(hots_obj_t));
 
 		tx_dassert(req_i < RPC_MAX_MSG_CORO);
 		tx_req_arr[req_i] = req;
