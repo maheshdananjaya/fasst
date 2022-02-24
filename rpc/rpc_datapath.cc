@@ -315,7 +315,7 @@ coro_id_t* Rpc::poll_comps()
 	// may never get a RECV completion during packet loss.
 	ld_iters++;
 	if(ld_iters == RPC_LOSS_DETECTION_STEP) {
-		ld_check_packet_loss(); //DAM ommiting
+		//ld_check_packet_loss(); //DAM ommiting
 		ld_iters = 0;
 	}
 
@@ -578,7 +578,10 @@ coro_id_t* Rpc::poll_comps()
 						resp_mbuf->cur_buf, &cmsg_resphdr->resp_type,
 						&wc_buf[wc_off], req_len, rpc_handler_arg[req_type]); //
 	
-					cmsg_resphdr->size = resp_len;	/* cmsg_resphdr is valid */
+					
+					//cmsg_resphdr->size = resp_len;	/* cmsg_resphdr is valid */
+					//DAM reducing the response size
+					cmsg_resphdr->size = 0;	/* cmsg_resphdr is valid */
 
 					if(resp_len==0) tx_failed=true;
 	
@@ -587,7 +590,10 @@ coro_id_t* Rpc::poll_comps()
 					rpc_dassert(is_aligned(resp_len, sizeof(uint64_t)));
 	
 					wc_off += req_len;
-					resp_mbuf->cur_buf += resp_len;
+					//resp_mbuf->cur_buf += resp_len;
+					//DAM reducing the response size
+					resp_mbuf->cur_buf += 0;
+
 	
 					/* Ensure that we don't overflow the response buffer */
 					rpc_dassert(resp_mbuf->length() <= resp_mbuf->alloc_len);
@@ -609,12 +615,14 @@ coro_id_t* Rpc::poll_comps()
 				//dam_resp_mbuf.alloc_len(info.max_pkt_size);
 
             	wc_off = 0;	
+
+            	hots_mbuf_t *dam_resp_mbuf;
+				dam_resp_mbuf = (hots_mbuf_t*)malloc(sizeof(hots_mbuf_t)); 
+				dam_resp_mbuf->alloc(info.max_pkt_size); //dummy response buffer.
             	//should happen out of the cricitcal path. 
 				for(int i = 0; i < (int) _num_reqs; i++) {
 
-					hots_mbuf_t *dam_resp_mbuf;
-					dam_resp_mbuf = (hots_mbuf_t*)malloc(sizeof(hots_mbuf_t)); 
-					dam_resp_mbuf->alloc(info.max_pkt_size); //dummy response buffer.					
+										
 
 					rpc_dassert(is_aligned(wc_off, sizeof(rpc_cmsg_reqhdr_t)));
 					rpc_dassert(is_aligned(&dam_resp_mbuf,sizeof(rpc_cmsg_reqhdr_t)));

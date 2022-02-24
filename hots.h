@@ -18,10 +18,10 @@ using namespace boost::coroutines;
 #define bit_capacity(b) (1 << b)
 
 // Debugging for different subsystems
-#define RPC_DEBUG_ASSERT 0	/* rpc_defs.h */
-#define DS_DEBUG_ASSERT 0	/* ds.h */
-#define TX_DEBUG_ASSERT 0	/* tx_defs.h */
-#define LS_DEBUG_ASSERT 0	/* lockserver.h */
+#define RPC_DEBUG_ASSERT 1	/* rpc_defs.h */
+#define DS_DEBUG_ASSERT 1	/* ds.h */
+#define TX_DEBUG_ASSERT 1	/* tx_defs.h */
+#define LS_DEBUG_ASSERT 1	/* lockserver.h */
 
 #define RPC_DEBUG_PRINTF 0	/* rpc_defs.h */
 
