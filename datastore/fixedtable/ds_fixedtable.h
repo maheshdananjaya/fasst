@@ -19,7 +19,7 @@
 #include "mica/table/fixedtable.h"
 #include "mica/util/hash.h"
 
-#define DS_FIXEDTABLE_DPRINTF 1
+#define DS_FIXEDTABLE_DPRINTF 0
 
 // Debug macros
 #define ds_fixedtable_printf(fmt, ...) \
