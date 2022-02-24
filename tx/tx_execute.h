@@ -426,6 +426,10 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield, bool _dam)
 // 1 version : without RMW support. RMW need writesmakred as read if the were read by the transactions. 
 forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 {
+	
+	tx_dprintf("Rpc: Worker %d, coro %d delegating a transaction", mappings->wrkr_gid , coro_id);
+
+
 	tx_dassert(tx_status == tx_status_t::in_progress);
 
 	tx_dassert(read_set.size() + write_set.size() <= RPC_MAX_MSG_CORO);
@@ -441,7 +445,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 
 		rpc_req_t *req = rpc->start_new_req(coro_id,
 			item.rpc_reqtype, item.primary_mn,
-			(uint8_t *) &item.obj->hdr, sizeof(hots_obj_t));
+			(uint8_t *) item.obj->val, sizeof(uint64_t)); //DAM- change to reduced response
 
 		tx_req_arr[req_i] = req;
 		req_i++;
@@ -465,7 +469,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 
 		rpc_req_t *req = rpc->start_new_req(coro_id,
 			item.rpc_reqtype, item.primary_mn,
-			(uint8_t *) &item.obj->hdr, sizeof(hots_obj_t));
+			(uint8_t *) item.obj->val, sizeof(uint64_t)); //DAM- change to reduced response
 
 		tx_dassert(req_i < RPC_MAX_MSG_CORO);
 		tx_req_arr[req_i] = req;
@@ -552,6 +556,8 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 
 	tx_dassert(tx_status == tx_status_t::in_progress ||
 		tx_status == tx_status_t::must_abort);
+
+	tx_dprintf("Rpc: Worker %d, coro %d Commiting a transaction", mappings->wrkr_gid , coro_id);
 
 	return tx_status;
 }
