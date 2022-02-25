@@ -325,6 +325,7 @@ forceinline tx_status_t Tx::do_read(coro_yield_t &yield, bool _dam)
 		tx_rwset_item_t &item = write_set[i];
 
 		if(item.write_mode == tx_write_mode_t::insert) continue; //DAM ignore inserts.
+
 		tx_dassert(item.write_mode != tx_write_mode_t::insert);
 
 		ds_resptype_t resp_type = (ds_resptype_t) tx_req_arr[req_i]->resp_type;
@@ -523,19 +524,18 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
     //tx_status must be returned appropriately. 
 	//if(read_set.size() > 0){
 
-		for(size_t i = 0; i < read_set.size(); i++) {
-			//tx_rwset_item_t &item = read_set[i];
-			ds_resptype_t resp_type = (ds_resptype_t) tx_req_arr[req_i]->resp_type;
-	
-			/* Hdr for successfully read keys need not be locked (bkt collison) */
-			//DAM need tomlokc as well
-			if(resp_type != ds_resptype_t::get_rdonly_success){
-				tx_status = tx_status_t::must_abort;
-			}
-			
-			req_i++;
-		}
+	for(size_t i = 0; i < read_set.size(); i++) {
+		//tx_rwset_item_t &item = read_set[i];
+		ds_resptype_t resp_type = (ds_resptype_t) tx_req_arr[req_i]->resp_type;
 
+		/* Hdr for successfully read keys need not be locked (bkt collison) */
+		//DAM need tomlokc as well
+		if(resp_type != ds_resptype_t::get_rdonly_success){
+			tx_status = tx_status_t::must_abort;
+		}
+		
+		req_i++;
+	}
 		/* Check the responses */
 	for(size_t _req_i = 0; _req_i < write_set.size(); _req_i++) {
 
@@ -557,7 +557,7 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 	tx_dassert(tx_status == tx_status_t::in_progress ||
 		tx_status == tx_status_t::must_abort);
 
-	tx_dprintf("Rpc: Worker %d, coro %d Commiting a transaction", mappings->wrkr_gid , coro_id);
+	tx_dprintf("Rpc: Worker %d, coro %d Commiting a transaction with status %d", mappings->wrkr_gid , coro_id, tx_status);
 
 	return tx_status;
 }

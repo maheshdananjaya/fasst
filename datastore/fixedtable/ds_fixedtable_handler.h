@@ -278,7 +278,7 @@ forceinline size_t ds_fixedtable_rpc_handler(
 	}
 
 	//DAM- no need to validae. just lock
-	//assuming not read. so no read validation. TODO:add delete in to the reads.
+	//assuming not read. so no read validation. TODO:add delete in
 
 	case ds_reqtype_t::del_dam : { // Get_for_upd
 		ds_dassert(req_len == sizeof(ds_generic_get_req_t));
