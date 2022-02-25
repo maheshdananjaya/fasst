@@ -83,6 +83,19 @@ Rpc::Rpc(struct rpc_args args) : info(args)
 	hrd_close_memcached();	/* Close memcached connections for this thread */
 }
 
+//DAM
+bool Rpc::is_dam_node(){
+
+	
+	if(info.wrkr_gid/info.workers_per_machine == info.num_machines-1)
+	{
+		//printf("Worker %d: is a dam node.\n", wrkr_gid);
+		return true;
+	}
+
+	return false;
+}
+
 /* Register a handler and an optional argument for a request type. */
 void Rpc::register_rpc_handler(int req_type,
 	size_t (*func)(uint8_t *resp_buf, rpc_resptype_t *resp_type,

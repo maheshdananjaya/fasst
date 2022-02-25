@@ -789,6 +789,7 @@ void run_thread(struct thread_params *params)
 		tatp->populate_all_tables_barrier(mappings);
 	}
 #else
+	
  tatp->populate_all_tables_barrier(mappings);
 #endif
 	//tatp->populate_all_tables_barrier(mappings);

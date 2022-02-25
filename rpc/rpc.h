@@ -103,7 +103,7 @@ public:
 	int send_resps();	/* Used by master coroutine to flush queued responses */
 	coro_id_t* poll_comps();	/* Process RECVs; return completed coroutines */
 	void ld_check_packet_loss();
-
+    bool is_dam_node();
 
 	// Lockserver
 	void locksrv_loop(Lockserver *lockserver);
