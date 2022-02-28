@@ -557,7 +557,8 @@ forceinline tx_status_t Tx::do_delegate(coro_yield_t &yield)
 	tx_dassert(tx_status == tx_status_t::in_progress ||
 		tx_status == tx_status_t::must_abort);
 
-	tx_dprintf("Rpc: Worker %d, coro %d Commiting a transaction with status %d", mappings->wrkr_gid , coro_id, tx_status);
+	tx_dprintf("Rpc: Worker %d, coro %d Commiting a transaction with status %d", mappings->wrkr_gid , coro_id, (int) tx_status);
+	
 
 	return tx_status;
 }
