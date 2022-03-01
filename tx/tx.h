@@ -115,7 +115,7 @@ public:
 	{
 		/* Txns must be committed or aborted before starting a new txn */
 
-		tx_dprintf("Rpc: Worker %d, coro %d starting a transaction", mappings->wrkr_gid , coro_id);
+		tx_dprintf("Rpc: Worker %d, coro %d starting a transaction \n", mappings->wrkr_gid , coro_id);
 		tx_dassert(tx_status == tx_status_t::committed ||
 			tx_status == tx_status_t::aborted);
 
