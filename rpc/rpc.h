@@ -206,7 +206,7 @@ public:
 			"Cmsg index = %d\n", info.wrkr_gid, coro_id,
 			rpc_type_to_string(req_type).c_str(), resp_mn, cmsg_i);
 
-		rpc_dassert(req_type != RPC_LOCKSERVER_REQ); //DAM assert
+		//rpc_dassert(req_type != RPC_LOCKSERVER_REQ); //DAM assert
 
 		return req;
 	}

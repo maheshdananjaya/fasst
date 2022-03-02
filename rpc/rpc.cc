@@ -75,6 +75,7 @@ Rpc::Rpc(struct rpc_args args) : info(args)
 
 		ah[mc_i] = ibv_create_ah(cb->pd, &ah_attr);
 		assert(ah[mc_i] != NULL);
+		
 	}
 
 	hrd_red_printf("Rpc: initialization done. Closing memcached connection.!\n");
