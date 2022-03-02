@@ -485,7 +485,7 @@ coro_id_t* Rpc::poll_comps()
 						"Size = %u (coalesced size = %lu, %d reqs)\n",
 						info.wrkr_gid,
 						rpc_type_to_string(cmsg_reqhdr->req_type).c_str(),
-						_mchn_id,, _coro_id, cmsg_reqhdr->size, wc_len, (int) _num_reqs);
+						_mchn_id, _coro_id, cmsg_reqhdr->size, wc_len, (int) _num_reqs);
 
 					rpc_dassert(cmsg_reqhdr->req_type != RPC_LOCKSERVER_REQ); //DAM to check the lockerserver issue.
 	
