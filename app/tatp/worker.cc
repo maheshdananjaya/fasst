@@ -591,6 +591,8 @@ void slave_func(coro_yield_t &yield, int coro_id)
 		stat_tx_attempted_tot++;
 		tatp_stat_inc(stat_tx_attempted[static_cast<int>(txn_type)], 1);
 
+		printf("Transaction type %d of coro id %d starting.... \n", (static_cast<int>, coro_id);
+
 		bool tx_committed = false; /* Did the txn commit? */
 		switch(txn_type) {
 			case tatp_txn_type_t::get_subsciber_data:

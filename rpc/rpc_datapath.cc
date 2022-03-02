@@ -421,10 +421,12 @@ coro_id_t* Rpc::poll_comps()
 				cmsg_reqhdr = (rpc_cmsg_reqhdr_t *) &wc_buf[wc_off];
 
 				rpc_dprintf("Rpc: Worker %d received %s response from "
-					"machine %d. Size = %u (coalesced size = %lu)\n",
+					"machine %d. Size = %u (coalesced size = %lu) for coroutine- %d\n",
 					info.wrkr_gid,
 					rpc_type_to_string(cmsg_reqhdr->resp_type).c_str(),
-					_mchn_id, cmsg_reqhdr->size, wc_len);
+					_mchn_id, cmsg_reqhdr->size, wc_len, _coro_id);
+
+				rpc_assert(cmsg_reqhdr->resp_type != RPC_LOCKSERVER_REQ);
 
 				/* Unmarshal the request header */
 				rpc_dassert(cmsg_reqhdr->magic == RPC_CMSG_REQ_HDR_MAGIC);
@@ -479,11 +481,13 @@ coro_id_t* Rpc::poll_comps()
 					uint32_t req_type = cmsg_reqhdr->req_type;
 					uint32_t req_len = cmsg_reqhdr->size;
 	
-					rpc_dprintf("Rpc: Worker %d received %s req from machine %d. "
+					rpc_dprintf("Rpc: Worker %d received %s req from machine %d and coro id - %d. "
 						"Size = %u (coalesced size = %lu, %d reqs)\n",
 						info.wrkr_gid,
 						rpc_type_to_string(cmsg_reqhdr->req_type).c_str(),
-						_mchn_id, cmsg_reqhdr->size, wc_len, (int) _num_reqs);
+						_mchn_id,, _coro_id, cmsg_reqhdr->size, wc_len, (int) _num_reqs);
+
+					rpc_assert(cmsg_reqhdr->req_type != RPC_LOCKSERVER_REQ); //DAM to check the lockerserver issue.
 	
 					/* Copy the request header to the response */
 					rpc_cmsg_reqhdr_t *cmsg_resphdr = (rpc_cmsg_reqhdr_t *)
@@ -544,11 +548,11 @@ coro_id_t* Rpc::poll_comps()
 					uint32_t req_type = cmsg_reqhdr->req_type;
 					uint32_t req_len = cmsg_reqhdr->size;
 	
-					rpc_dprintf("Rpc: Worker %d received %s req from machine %d. "
+					rpc_dprintf("Rpc: Worker %d received %s req from machine %d coro id - %d. "
 						"Size = %u (coalesced size = %lu, %d reqs)\n",
 						info.wrkr_gid,
 						rpc_type_to_string(cmsg_reqhdr->req_type).c_str(),
-						_mchn_id, cmsg_reqhdr->size, wc_len, (int) _num_reqs);
+						_mchn_id, _coro_id, cmsg_reqhdr->size, wc_len, (int) _num_reqs);
 	
 	
 					// DAM only the first or the last message of the batch need to be attached with the respose.
@@ -608,8 +612,8 @@ coro_id_t* Rpc::poll_comps()
 
 				//Step-2 ; compare and unlocking and updating put/insert values. 
 				// if the transaction fails, only need to unlock. no updates. 
-				rpc_dprintf("Rpc: Worker %d transaction status : %d \n",
-						info.wrkr_gid, (tx_failed?0:1));	
+				rpc_dprintf("Rpc: Worker %d transaction status : %d from machine %d and coro is - %d\n",
+						info.wrkr_gid, (tx_failed?0:1), _mchn_id, _coro_id);	
 
 				//dummy reponse buffer
 				//rpc_cmsg_t dam_cmsg; //unused
