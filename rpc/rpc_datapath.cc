@@ -426,7 +426,7 @@ coro_id_t* Rpc::poll_comps()
 					rpc_type_to_string(cmsg_reqhdr->resp_type).c_str(),
 					_mchn_id, cmsg_reqhdr->size, wc_len, _coro_id);
 
-				rpc_assert(cmsg_reqhdr->resp_type != RPC_LOCKSERVER_REQ);
+				rpc_dassert(cmsg_reqhdr->resp_type != RPC_LOCKSERVER_REQ); //DAM assert to check RPC_LOCKSERVER_REQ
 
 				/* Unmarshal the request header */
 				rpc_dassert(cmsg_reqhdr->magic == RPC_CMSG_REQ_HDR_MAGIC);
@@ -487,7 +487,7 @@ coro_id_t* Rpc::poll_comps()
 						rpc_type_to_string(cmsg_reqhdr->req_type).c_str(),
 						_mchn_id,, _coro_id, cmsg_reqhdr->size, wc_len, (int) _num_reqs);
 
-					rpc_assert(cmsg_reqhdr->req_type != RPC_LOCKSERVER_REQ); //DAM to check the lockerserver issue.
+					rpc_dassert(cmsg_reqhdr->req_type != RPC_LOCKSERVER_REQ); //DAM to check the lockerserver issue.
 	
 					/* Copy the request header to the response */
 					rpc_cmsg_reqhdr_t *cmsg_resphdr = (rpc_cmsg_reqhdr_t *)
