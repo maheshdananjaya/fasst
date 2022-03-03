@@ -626,9 +626,14 @@ coro_id_t* Rpc::poll_comps()
 				dam_resp_mbuf = (hots_mbuf_t*)malloc(sizeof(hots_mbuf_t)); 
 				dam_resp_mbuf->alloc(info.max_pkt_size); //dummy response buffer.
             	//should happen out of the cricitcal path. 
-				for(int i = 0; i < (int) _num_reqs; i++) {
 
+            	//DAM - check null pointers here. probably an error or memory overflowing.
+            	rpc_dassert(dam_resp_mbuf !=NULL); 
+            	rpc_dassert(dam_resp_mbuf->cur_buf != NULL);
+
+				for(int i = 0; i < (int) _num_reqs; i++) {
 										
+					rpc_dprintf("request num  - %d \n", (int) _num_reqs);
 
 					rpc_dassert(is_aligned(wc_off, sizeof(rpc_cmsg_reqhdr_t)));
 					rpc_dassert(is_aligned(&dam_resp_mbuf,sizeof(rpc_cmsg_reqhdr_t)));
@@ -756,7 +761,9 @@ coro_id_t* Rpc::poll_comps()
 				}
 	
 					rpc_dassert(wc_off == wc_len);	
-				
+
+					rpc_dprintf("End delegated request \n");
+
 			}//DAM delegate request end
 
 			//we can do comit validate and a;l the steps here.
