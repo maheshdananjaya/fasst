@@ -762,7 +762,7 @@ coro_id_t* Rpc::poll_comps()
 	
 					rpc_dassert(wc_off == wc_len);	
 
-					rpc_dprintf("End delegated request \n");
+					rpc_dprintf("End delegated request %d \n", _coro_id);
 
 			}//DAM delegate request end
 
