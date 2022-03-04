@@ -172,7 +172,7 @@ struct hots_mbuf_t {
 		cur_buf = alloc_buf;
 	}
 
-	inline void free(){		
+	inline void free_mbuf(){		
 		free(alloc_buf);
 	}
 

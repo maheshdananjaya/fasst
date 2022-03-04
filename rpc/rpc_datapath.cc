@@ -760,7 +760,7 @@ coro_id_t* Rpc::poll_comps()
 					rpc_dassert(dam_resp_mbuf->length() <= dam_resp_mbuf->alloc_len);
 				}
 					//DAM deallocating memory to avoid memory overflowing.
-					dam_resp_mbuf->free();
+					dam_resp_mbuf->free_mbuf();
 					free(dam_resp_mbuf);
 
 					rpc_dassert(wc_off == wc_len);	
