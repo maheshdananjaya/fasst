@@ -759,7 +759,10 @@ coro_id_t* Rpc::poll_comps()
 					/* Ensure that we don't overflow the response buffer */
 					rpc_dassert(dam_resp_mbuf->length() <= dam_resp_mbuf->alloc_len);
 				}
-	
+					//DAM deallocating memory to avoid memory overflowing.
+					dam_resp_mbuf->free();
+					free(dam_resp_mbuf);
+
 					rpc_dassert(wc_off == wc_len);	
 
 					rpc_dprintf("End delegated request %d \n", _coro_id);

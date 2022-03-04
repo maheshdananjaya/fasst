@@ -23,7 +23,7 @@ using namespace boost::coroutines;
 #define TX_DEBUG_ASSERT 1	/* tx_defs.h */
 #define LS_DEBUG_ASSERT 1	/* lockserver.h */
 
-#define RPC_DEBUG_PRINTF 1	/* rpc_defs.h */
+#define RPC_DEBUG_PRINTF 0	/* rpc_defs.h */
 
 #define HOTS_ASSERT_MSG(condition, message) \
 	do { \
@@ -170,6 +170,10 @@ struct hots_mbuf_t {
 		assert(alloc_buf != NULL);
 		alloc_len = len;
 		cur_buf = alloc_buf;
+	}
+
+	inline void free(){		
+		free(alloc_buf);
 	}
 
 	/* Use a pre-allocated buffer for the mbuf */
