@@ -3,7 +3,7 @@
   },
 
   "hots": {
-	"num_coro": 2,
+	"num_coro": 20,
 	"base_port_index": 0,
 	"num_ports": 1,
 	"num_qps": 1,

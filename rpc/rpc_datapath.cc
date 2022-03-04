@@ -316,7 +316,7 @@ coro_id_t* Rpc::poll_comps()
 	ld_iters++;
 	if(ld_iters == RPC_LOSS_DETECTION_STEP) {
 		if(!is_dam_node()){
-			//ld_check_packet_loss(); //DAM ommiting
+			ld_check_packet_loss(); //DAM ommiting
 		}
 			ld_iters = 0;
 	}
