@@ -2,7 +2,7 @@
 #define SB_DEFS
 
 #include "assert.h"
-
+#define DAM
 // Debug macros
 #define SB_DEBUG_ASSERT 1
 

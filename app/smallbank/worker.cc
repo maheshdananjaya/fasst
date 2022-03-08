@@ -72,7 +72,14 @@ void master_func(coro_yield_t &yield, int coro_id)
 		next_coro[coro_i] = (coro_i == num_coro - 1) ? 0 : coro_i + 1;
 	}
 
+#ifdef DAM
+	if(wrkr_gid/workers_per_machine != num_machines-1)
+	{
+			yield(coro_arr[1]);
+	}
+#else
 	yield(coro_arr[1]);
+#endif
 
 	while(1) {
 		next_coro = rpc->poll_comps();
@@ -115,7 +122,7 @@ void txn_amalgamate(coro_yield_t &yield, int coro_id, Tx *tx)
 	tx->add_to_write_set(RPC_CHECKING_REQ,
 		chk_key_1.hots_key, &chk_obj_1, tx_write_mode_t::update);
 
-	tx_status_t ex_result = tx->do_read(yield); _unused(ex_result);
+	tx_status_t ex_result = tx->do_read(yield, true); _unused(ex_result);
 
 	sb_dassert(ex_result == tx_status_t::in_progress ||
 		ex_result == tx_status_t::must_abort);	/* Found or locked */
@@ -171,7 +178,7 @@ void txn_balance(coro_yield_t &yield, int coro_id, Tx *tx)
 	chk_key.acct_id = acct_id;
 	tx->add_to_read_set(RPC_CHECKING_REQ, chk_key.hots_key, &chk_obj);
 
-	tx_status_t ex_result = tx->do_read(yield); _unused(ex_result);
+	tx_status_t ex_result = tx->do_read(yield, true); _unused(ex_result);
 	if(ex_result != tx_status_t::in_progress) {
 		/* Abort if we read a locked  record */
 		tx->abort_rdonly();
@@ -212,7 +219,7 @@ void txn_deposit_checking(coro_yield_t &yield, int coro_id, Tx *tx)
 	tx->add_to_write_set(RPC_CHECKING_REQ,
 		chk_key.hots_key, &chk_obj, tx_write_mode_t::update);
 
-	tx_status_t ex_result = tx->do_read(yield); _unused(ex_result);
+	tx_status_t ex_result = tx->do_read(yield, true); _unused(ex_result);
 	sb_dassert(ex_result == tx_status_t::in_progress ||
 		ex_result == tx_status_t::must_abort);	/* Found or locked */
 
@@ -261,7 +268,7 @@ void txn_send_payment(coro_yield_t &yield, int coro_id, Tx *tx)
 	tx->add_to_write_set(RPC_CHECKING_REQ,
 		chk_key_1.hots_key, &chk_obj_1, tx_write_mode_t::update);
 
-	tx_status_t ex_result = tx->do_read(yield); _unused(ex_result);
+	tx_status_t ex_result = tx->do_read(yield, true); _unused(ex_result);
 	sb_dassert(ex_result == tx_status_t::in_progress ||
 		ex_result == tx_status_t::must_abort);	/* Found or locked */
 
@@ -313,7 +320,7 @@ void txn_transact_saving(coro_yield_t &yield, int coro_id, Tx *tx)
 	tx->add_to_write_set(RPC_SAVING_REQ,
 		sav_key.hots_key, &sav_obj, tx_write_mode_t::update);
 
-	tx_status_t ex_result = tx->do_read(yield); _unused(ex_result);
+	tx_status_t ex_result = tx->do_read(yield, true); _unused(ex_result);
 	sb_dassert(ex_result == tx_status_t::in_progress ||
 		ex_result == tx_status_t::must_abort);	/* Found or locked */
 
@@ -362,7 +369,7 @@ void txn_write_check(coro_yield_t &yield, int coro_id, Tx *tx)
 	tx->add_to_write_set(RPC_CHECKING_REQ,
 		chk_key.hots_key, &chk_obj, tx_write_mode_t::update);
 
-	tx_status_t ex_result = tx->do_read(yield); _unused(ex_result);
+	tx_status_t ex_result = tx->do_read(yield, true); _unused(ex_result);
 	sb_dassert(ex_result == tx_status_t::in_progress ||
 		ex_result == tx_status_t::must_abort);	/* Found or locked */
 
@@ -571,8 +578,23 @@ void run_thread(struct thread_params *params)
 	 * the thread that populates a key may be different from the thread that
 	 * is responsible for serving the key at run time.
 	 */
-	printf("Worker %d: populating SmallBank tables.\n", wrkr_gid);
-	sb->populate_all_tables_barrier(mappings);
+
+
+#ifdef DAM
+	if(wrkr_gid/workers_per_machine == num_machines-1)
+	{
+		printf("Worker %d: populating SmallBank tables.\n", wrkr_gid);
+		sb->populate_all_tables_barrier(mappings);
+	}
+#else
+	
+     printf("Worker %d: populating SmallBank tables.\n", wrkr_gid);
+	 sb->populate_all_tables_barrier(mappings););
+#endif
+
+
+	//printf("Worker %d: populating SmallBank tables.\n", wrkr_gid);
+	//sb->populate_all_tables_barrier(mappings);
 	workgen_arr = sb->create_workgen_array();
 	hrd_red_printf("Worker %d: populated all tables\n", wrkr_gid);
 
