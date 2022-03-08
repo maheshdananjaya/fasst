@@ -121,7 +121,7 @@ void txn_amalgamate(coro_yield_t &yield, int coro_id, Tx *tx)
 		ex_result == tx_status_t::must_abort);	/* Found or locked */
 
 	if(ex_result == tx_status_t::must_abort) {
-		tx->abort(yield);
+		tx->abort(yield, true);
 		return;
 	}
 
@@ -139,7 +139,7 @@ void txn_amalgamate(coro_yield_t &yield, int coro_id, Tx *tx)
 	sav_val_0->bal = 0;
 	chk_val_0->bal = 0;
 
-	tx_status_t commit_status = tx->commit(yield); _unused(commit_status);
+	tx_status_t commit_status = tx->commit(yield, true); _unused(commit_status);
 	
 	/* if we managed to lock the records, the txn must commit */
 	sb_dassert(commit_status == tx_status_t::committed);
@@ -183,7 +183,7 @@ void txn_balance(coro_yield_t &yield, int coro_id, Tx *tx)
 	sb_dassert(sav_val->magic == sb_sav_magic);
 	sb_dassert(chk_val->magic == sb_chk_magic);
 
-	tx_status_t commit_result = tx->commit(yield);
+	tx_status_t commit_result = tx->commit(yield, true);
 	if(commit_result == tx_status_t::committed) {
 		stat_tx_committed_tot++;
 		sb_stat_inc(stat_tx_committed[static_cast<int>(txn_type)], 1);
@@ -217,7 +217,7 @@ void txn_deposit_checking(coro_yield_t &yield, int coro_id, Tx *tx)
 		ex_result == tx_status_t::must_abort);	/* Found or locked */
 
 	if(ex_result == tx_status_t::must_abort) {
-		tx->abort(yield);
+		tx->abort(yield, true);
 		return;
 	}
 
@@ -227,7 +227,7 @@ void txn_deposit_checking(coro_yield_t &yield, int coro_id, Tx *tx)
 
 	chk_val->bal += amount;	/* Update checking balance */
 
-	tx_status_t commit_status = tx->commit(yield); _unused(commit_status);
+	tx_status_t commit_status = tx->commit(yield, true); _unused(commit_status);
 	
 	/* If we managed to lock the record, the txn must commit */
 	sb_dassert(commit_status == tx_status_t::committed);
@@ -266,7 +266,7 @@ void txn_send_payment(coro_yield_t &yield, int coro_id, Tx *tx)
 		ex_result == tx_status_t::must_abort);	/* Found or locked */
 
 	if(ex_result == tx_status_t::must_abort) {
-		tx->abort(yield);
+		tx->abort(yield, true);
 		return;
 	}
 
@@ -277,14 +277,14 @@ void txn_send_payment(coro_yield_t &yield, int coro_id, Tx *tx)
 	sb_dassert(chk_val_1->magic == sb_chk_magic);
 
 	if(chk_val_0->bal < amount) {
-		tx->abort(yield);
+		tx->abort(yield, true);
 		return;
 	}
 
 	chk_val_0->bal -= amount;	/* Debit */
 	chk_val_1->bal += amount;	/* Credit */
 
-	tx_status_t commit_status = tx->commit(yield); _unused(commit_status);
+	tx_status_t commit_status = tx->commit(yield, true); _unused(commit_status);
 	
 	/* if we managed to lock the records, the txn must commit */
 	sb_dassert(commit_status == tx_status_t::committed);
@@ -318,7 +318,7 @@ void txn_transact_saving(coro_yield_t &yield, int coro_id, Tx *tx)
 		ex_result == tx_status_t::must_abort);	/* Found or locked */
 
 	if(ex_result == tx_status_t::must_abort) {
-		tx->abort(yield);
+		tx->abort(yield, true);
 		return;
 	}
 
@@ -328,7 +328,7 @@ void txn_transact_saving(coro_yield_t &yield, int coro_id, Tx *tx)
 
 	sav_val->bal += amount;	/* Update saving balance */
 
-	tx_status_t commit_status = tx->commit(yield); _unused(commit_status);
+	tx_status_t commit_status = tx->commit(yield, true); _unused(commit_status);
 	
 	/* If we managed to lock the record, the txn must commit */
 	sb_dassert(commit_status == tx_status_t::committed);
@@ -367,7 +367,7 @@ void txn_write_check(coro_yield_t &yield, int coro_id, Tx *tx)
 		ex_result == tx_status_t::must_abort);	/* Found or locked */
 
 	if(ex_result == tx_status_t::must_abort) {
-		tx->abort(yield);
+		tx->abort(yield, true);
 		return;
 	}
 
@@ -382,7 +382,7 @@ void txn_write_check(coro_yield_t &yield, int coro_id, Tx *tx)
 		chk_val->bal -= amount;
 	}
 
-	tx_status_t commit_result = tx->commit(yield);
+	tx_status_t commit_result = tx->commit(yield, true);
 
 	/* This transaction can fail during validation */
 	if(commit_result == tx_status_t::committed) {
