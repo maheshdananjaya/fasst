@@ -5,7 +5,7 @@
 
 // Debug macros
 #define SB_DEBUG_ASSERT 1
-
+#define DAM
 /*
  * Collect stats for
  * a. Total commit rate

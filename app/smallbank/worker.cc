@@ -72,7 +72,14 @@ void master_func(coro_yield_t &yield, int coro_id)
 		next_coro[coro_i] = (coro_i == num_coro - 1) ? 0 : coro_i + 1;
 	}
 
+#ifdef DAM
+	if(wrkr_gid/workers_per_machine != num_machines-1)
+	{
+			yield(coro_arr[1]);
+	}
+#else
 	yield(coro_arr[1]);
+#endif
 
 	while(1) {
 		next_coro = rpc->poll_comps();
@@ -571,8 +578,20 @@ void run_thread(struct thread_params *params)
 	 * the thread that populates a key may be different from the thread that
 	 * is responsible for serving the key at run time.
 	 */
-	printf("Worker %d: populating SmallBank tables.\n", wrkr_gid);
-	sb->populate_all_tables_barrier(mappings);
+
+
+#ifdef DAM
+	if(wrkr_gid/workers_per_machine == num_machines-1)
+	{
+		printf("Worker %d: populating SmallBank tables.\n", wrkr_gid);
+		sb->populate_all_tables_barrier(mappings);
+	}
+#else
+ 	printf("Worker %d: populating SmallBank tables.\n", wrkr_gid);
+ 	sb->populate_all_tables_barrier(mappings);
+#endif
+
+	
 	workgen_arr = sb->create_workgen_array();
 	hrd_red_printf("Worker %d: populated all tables\n", wrkr_gid);
 
