@@ -610,7 +610,7 @@ coro_id_t* Rpc::poll_comps()
 				//if(tx_failed) continue; // still need to unlock rd_only and wrd-wr set. if validation can be done during the first round, no need to lock those rd_only data.
 				
 				//DAM sending early results to the coordinator!.
-				send_resps();
+				//send_resps();
 
 				//Step-2 ; compare and unlocking and updating put/insert values. 
 				// if the transaction fails, only need to unlock. no updates. 
