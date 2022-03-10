@@ -145,8 +145,17 @@ public:
 	/* Get a log replica from this worker's global ID */
 	forceinline int get_log_mn(int back_i)
 	{
-		rpc_dassert(back_i >= 0 && back_i < num_backups);
-		return get_backup_mn_from_primary(machine_id, back_i);
+
+
+		#ifdef DAM
+				return tot_primary_client_machines; //retunr memory machine id. assuming 1 memory node. 
+
+		#else
+		  	rpc_dassert(back_i >= 0 && back_i < num_backups);
+			return get_backup_mn_from_primary(machine_id, back_i);
+		#endif
+
+		
 	}
 
 	forceinline int get_lockserver_mn()

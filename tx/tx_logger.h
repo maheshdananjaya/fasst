@@ -49,7 +49,8 @@ forceinline bool Tx::log(coro_yield_t &yield)
 	uint64_t resp_buf;	/* Logger responses are 0-byte so we don't need them */
 	rpc_req_t *rpc_req[HOTS_MAX_BACKUPS];
 
-	for(int back_i = 0; back_i < mappings->num_backups; back_i++) {
+	//For DAM logging to the memory machine. +1
+	for(int back_i = 0; back_i < mappings->num_backups+1; back_i++) {
 		int log_mn = mappings->get_log_mn(back_i);
 
 		rpc_req[back_i] = rpc->start_new_req(coro_id,
