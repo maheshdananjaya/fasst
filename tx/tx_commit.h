@@ -113,9 +113,15 @@ forceinline tx_status_t Tx::commit(coro_yield_t &yield)
  	// set. Since we have locks on the write set, commit should succeed now.
 
 	/* Do logging */
-	if(mappings->num_backups > 0) {
+	#ifdef DAM 
+	
 		log(yield);
-	}
+	
+	#else
+		if(mappings->num_backups > 0) {
+			log(yield);
+		}
+	#endif
 
 	// Send update requests to backups first and wait for ACKs. After receiving
 	// ACKs, send updates to to primary.
