@@ -519,6 +519,7 @@ coro_id_t* Rpc::poll_comps()
 
 			}
 
+			//is_req=2
 			else{ //DAM delegate request. first lock and then commit out of the critical path.
 
 				/* Initialize a new RPC message for the master */
@@ -610,7 +611,9 @@ coro_id_t* Rpc::poll_comps()
 				//if(tx_failed) continue; // still need to unlock rd_only and wrd-wr set. if validation can be done during the first round, no need to lock those rd_only data.
 				
 				//DAM sending early results to the coordinator!.
-				send_resps();
+				
+				send_resps(); //DAM - issue sending responses twise without clearing the buffer.
+				resp_batch.clear(); // no more dublicate messages are sent to the cline side.
 
 				//Step-2 ; compare and unlocking and updating put/insert values. 
 				// if the transaction fails, only need to unlock. no updates. 
