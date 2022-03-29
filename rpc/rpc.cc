@@ -67,11 +67,29 @@ Rpc::Rpc(struct rpc_args args) : info(args)
 		
 		struct ibv_ah_attr ah_attr;
 		memset(&ah_attr, 0, sizeof(struct ibv_ah_attr));
-		ah_attr.is_global = 0;
-		ah_attr.dlid = rem_qp->lid;
-		ah_attr.sl = 0;
-		ah_attr.src_path_bits = 0;
-		ah_attr.port_num = cb->dev_port_id;	/* Local port */
+
+		#ifdef ROCE
+			ah_attr.is_global = 1;
+			ah_attr.dlid = 0;
+			ah_attr.sl = 0;
+			ah_attr.src_path_bits = 0;
+			ah_attr.port_num = cb->dev_port_id;	/* Local port */
+
+			ah_attr.grh.dgid.global.interface_id =  cb->remote_dgram_qp_attrs[i].gid_global_interface_id;
+			ah_attr.grh.dgid.global.subnet_prefix =  cb->remote_dgram_qp_attrs[i].gid_global_subnet_prefix;
+			
+			ah_attr.grh.sgid_index = 0;
+			ah_attr.grh.hop_limit = 1;			
+
+		#else 
+
+			ah_attr.is_global = 0;
+			ah_attr.dlid = rem_qp->lid;
+			ah_attr.sl = 0;
+			ah_attr.src_path_bits = 0;
+			ah_attr.port_num = cb->dev_port_id;	/* Local port */
+
+		#endif //Infiniband
 
 		ah[mc_i] = ibv_create_ah(cb->pd, &ah_attr);
 		assert(ah[mc_i] != NULL);

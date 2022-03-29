@@ -70,7 +70,8 @@
 
 /* Registry info about a QP */
 struct hrd_qp_attr {
-	char name[HRD_QP_NAME_SIZE];
+	char name[HRD_QP_N
+		AME_SIZE];
 
 	/* Info about the RDMA buffer associated with this QP */
 	uintptr_t buf_addr;
@@ -79,6 +80,11 @@ struct hrd_qp_attr {
 	
 	int lid;
 	int qpn;
+
+	#ifdef ROCE
+			uint64_t gid_global_interface_id;
+			uint64_t gid_global_subnet_prefix; 
+	#endif
 };
 
 struct hrd_ctrl_blk {
