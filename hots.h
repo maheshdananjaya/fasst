@@ -62,7 +62,7 @@ static_assert(bit_capacity(HOTS_WRKR_GID_BITS) >= HOTS_MAX_WORKERS, "");
 
 /* For lockserver, we allocate one hugepage buffer per machine */
 #define LOCKSERVER_SHM_KEY 201
-
+#define ROCE
 
 // Datastores
 #define HOTS_MAX_VALUE 40	/* Max obj val_size. Doesn't affect performance. */
