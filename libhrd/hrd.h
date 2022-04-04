@@ -31,7 +31,7 @@
 #define HRD_RESERVED_NAME_PREFIX "__HRD_RESERVED_NAME_PREFIX"
 
 #define HRD_CONNECT_IB_ATOMICS 0
-
+#define ROCE
 /*
  * Small max_inline_data reduces the QP's max WQE size, which reduces the
  * DMA size in doorbell method of WQE fetch.

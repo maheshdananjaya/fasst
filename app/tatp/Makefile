@@ -1,6 +1,6 @@
 all: main
 
-CXX := g++-5
+CXX := g++
 LD := ${CXX}
 
 # Flags to enable link-time optimization and GDB
@@ -15,7 +15,7 @@ INC	:= -I ${HOTS_HOME} -I ${MICA_HOME}
 #DEBUG := -DNDEBUG
 CPPFLAGS := ${ENABLE_DGB} ${LTO} -O3 ${DEBUG} -std=c++11 ${INC} -Wall -Werror \
 	-Wno-unused-result -Wno-unused-value -Wno-unused-function \
-	-Winline
+	-Winline -faligned-new
 
 LDFLAGS := ${ENABLE_DGB} ${LTO} -O3 -libverbs -lrt -pthread -lmemcached -lnuma \
 	-lpapi -lboost_system -lboost_coroutine
