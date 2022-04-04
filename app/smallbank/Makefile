@@ -10,7 +10,7 @@ ENABLE_DGB :=
 HOTS_HOME := ../..
 MICA_HOME := ../../mica2/src
 
-INC	:= -I ${HOTS_HOME} -I ${MICA_HOME}
+INC	:= -I ${HOTS_HOME} -I ${MICA_HOME} -I/usr/local/include
 
 #DEBUG := -DNDEBUG
 CPPFLAGS := ${ENABLE_DGB} ${LTO} -O3 ${DEBUG} -std=c++11 ${INC} -Wall -Werror \
@@ -18,7 +18,7 @@ CPPFLAGS := ${ENABLE_DGB} ${LTO} -O3 ${DEBUG} -std=c++11 ${INC} -Wall -Werror \
 	-Winline -faligned-new
 
 LDFLAGS := ${ENABLE_DGB} ${LTO} -O3 -libverbs -lrt -pthread -lmemcached -lnuma \
-	-lpapi -lboost_system -lboost_coroutine
+	-lpapi -lboost_system -lboost_coroutine -L/usr/local/lib
 
 src := ${HOTS_HOME}/libhrd/hrd_conn.o ${HOTS_HOME}/libhrd/hrd_util.o \
 	${HOTS_HOME}/rpc/rpc.o ${HOTS_HOME}/rpc/rpc_datapath.o \
