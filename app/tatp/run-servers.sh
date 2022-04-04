@@ -1,7 +1,7 @@
 #!/bin/bash
 source $(dirname $0)/../../util/helpers.sh
 
-export HRD_REGISTRY_IP="10.113.1.47"
+export HRD_REGISTRY_IP="128.110.96.126"
 export MLX5_SINGLE_THREADED=1
 export MLX4_SINGLE_THREADED=1
 export MLX_QP_ALLOC_TYPE="HUGE"
