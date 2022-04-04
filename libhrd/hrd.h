@@ -70,8 +70,7 @@
 
 /* Registry info about a QP */
 struct hrd_qp_attr {
-	char name[HRD_QP_N
-		AME_SIZE];
+	char name[HRD_QP_NAME_SIZE];
 
 	/* Info about the RDMA buffer associated with this QP */
 	uintptr_t buf_addr;

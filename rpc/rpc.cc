@@ -75,8 +75,8 @@ Rpc::Rpc(struct rpc_args args) : info(args)
 			ah_attr.src_path_bits = 0;
 			ah_attr.port_num = cb->dev_port_id;	/* Local port */
 
-			ah_attr.grh.dgid.global.interface_id =  cb->remote_dgram_qp_attrs[i].gid_global_interface_id;
-			ah_attr.grh.dgid.global.subnet_prefix =  cb->remote_dgram_qp_attrs[i].gid_global_subnet_prefix;
+			ah_attr.grh.dgid.global.interface_id =  rem_qp->gid_global_interface_id;
+			ah_attr.grh.dgid.global.subnet_prefix =  rem_qp->gid_global_subnet_prefix;
 			
 			ah_attr.grh.sgid_index = 0;
 			ah_attr.grh.hop_limit = 1;			

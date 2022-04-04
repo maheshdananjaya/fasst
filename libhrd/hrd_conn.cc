@@ -507,7 +507,7 @@ void hrd_connect_qp(struct hrd_ctrl_blk *cb,
 	conn_attr.rq_psn = HRD_DEFAULT_PSN;
 
 	conn_attr.ah_attr.is_global = 0;
-	conn_attr.ah_attr..dlid = remote_qp_attr->lid;
+	conn_attr.ah_attr.dlid = remote_qp_attr->lid;
 	conn_attr.ah_attr.sl = 0;
 	conn_attr.ah_attr.src_path_bits = 0;
 	conn_attr.ah_attr.port_num = cb->dev_port_id; /* Local port! */
@@ -601,7 +601,7 @@ void hrd_publish_dgram_qp(struct hrd_ctrl_blk *cb, int n, const char *qp_name)
 	#ifdef ROCE
 
 		union ibv_gid my_gid= get_gid(cb->context);
-		ibv_query_gid(cb->context, cb->port, 0, &my_gid);
+		ibv_query_gid(cb->context, cb->dev_port_id, 0, &my_gid);
 
 		fprintf(stderr, "GID: Interface id = %lld subnet prefix = %lld\n",  
 				(long long) ret_gid.global.interface_id, (long long) ret_gid.global.subnet_prefix);
@@ -631,7 +631,8 @@ void hrd_publish_dgram_qp(struct hrd_ctrl_blk *cb, int n, const char *qp_name)
 	#endif
 
 	
-
+}
+//
 
 struct hrd_qp_attr* hrd_get_published_qp(const char *qp_name)
 {
