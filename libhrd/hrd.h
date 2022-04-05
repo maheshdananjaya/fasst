@@ -31,7 +31,7 @@
 #define HRD_RESERVED_NAME_PREFIX "__HRD_RESERVED_NAME_PREFIX"
 
 #define HRD_CONNECT_IB_ATOMICS 0
-#define ROCE
+//#define ROCE
 #define IB_PHYS_PORT 1 // for ROCE
 
 /*
