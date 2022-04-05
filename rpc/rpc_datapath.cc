@@ -228,7 +228,7 @@ coro_id_t* Rpc::poll_comps()
 	// may never get a RECV completion during packet loss.
 	ld_iters++;
 	if(ld_iters == RPC_LOSS_DETECTION_STEP) {
-		ld_check_packet_loss();
+		//ld_check_packet_loss();
 		ld_iters = 0;
 	}
 	
