@@ -603,10 +603,12 @@ void hrd_publish_dgram_qp(struct hrd_ctrl_blk *cb, int n, const char *qp_name)
 
 		union ibv_gid my_gid; //= get_gid(cb->context);
 		//ibv_query_gid(cb->context, cb->dev_port_id, 0, &my_gid);
-		int ret = ibv_query_gid(cb->ctx, IB_PHYS_PORT, 0, &my_gid);
+		//int ret = ibv_query_gid(cb->ctx, IB_PHYS_PORT, 0, &my_gid);
+		assert(IB_PHYS_PORT != b->dev_port_id);
+		int ret = ibv_query_gid(cb->ctx, cb->dev_port_id, 0, &my_gid);
 		assert(ret==0);
-		fprintf(stderr, "GID: Interface id = %lld subnet prefix = %lld\n",  
-				(long long) my_gid.global.interface_id, (long long) my_gid.global.subnet_prefix);
+		fprintf(stderr, "GID: Interface id = %lld subnet prefix = %lld for port id = %lld \n",  
+				(long long) my_gid.global.interface_id, (long long) my_gid.global.subnet_prefix, (long long) cb->dev_port_id);
 
 		struct hrd_qp_attr qp_attr;
 		memcpy(qp_attr.name, qp_name, len);
