@@ -42,7 +42,13 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <emmintrin.h>
+
+#ifdef AARCH64
+	#include <arm_neon.h>
+#else 
+	#include <emmintrin.h>
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {
