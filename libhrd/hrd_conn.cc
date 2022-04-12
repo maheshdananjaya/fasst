@@ -507,7 +507,7 @@ void hrd_connect_qp(struct hrd_ctrl_blk *cb,
 	conn_attr.rq_psn = HRD_DEFAULT_PSN;
 
 	conn_attr.ah_attr.is_global = 0;
-	conn_attr.ah_attr..dlid = remote_qp_attr->lid;
+	conn_attr.ah_attr.dlid = remote_qp_attr->lid;
 	conn_attr.ah_attr.sl = 0;
 	conn_attr.ah_attr.src_path_bits = 0;
 	conn_attr.ah_attr.port_num = cb->dev_port_id; /* Local port! */
@@ -597,13 +597,40 @@ void hrd_publish_dgram_qp(struct hrd_ctrl_blk *cb, int n, const char *qp_name)
 		}
 	}
 
-	struct hrd_qp_attr qp_attr;
-	memcpy(qp_attr.name, qp_name, len);
-	qp_attr.name[len] = 0;	/* Add the null terminator */
-	qp_attr.lid = hrd_get_local_lid(cb->dgram_qp[n]->context, cb->dev_port_id);
-	qp_attr.qpn = cb->dgram_qp[n]->qp_num;
+	#ifdef ROCE
+
+		union ibv_gid my_gid; //= get_gid(cb->context);
+		//ibv_query_gid(cb->context, cb->dev_port_id, 0, &my_gid);
+		//int ret = ibv_query_gid(cb->ctx, IB_PHYS_PORT, 0, &my_gid);
+		assert(IB_PHYS_PORT != cb->dev_port_id);
+		int ret = ibv_query_gid(cb->ctx, cb->dev_port_id, 0, &my_gid);
+		assert(ret==0);
+		fprintf(stderr, "GID: Interface id = %lld subnet prefix = %lld for port id = %lld \n",  
+				(long long) my_gid.global.interface_id, (long long) my_gid.global.subnet_prefix, (long long) cb->dev_port_id);
+
+		struct hrd_qp_attr qp_attr;
+		memcpy(qp_attr.name, qp_name, len);
+		qp_attr.name[len] = 0;	/* Add the null terminator */
+
+		qp_attr.lid = hrd_get_local_lid(cb->dgram_qp[n]->context, cb->dev_port_id);
+		qp_attr.qpn = cb->dgram_qp[n]->qp_num;
+
+
+		qp_attr.gid_global_interface_id = my_gid.global.interface_id; //ROCE
+		qp_attr.gid_global_subnet_prefix = my_gid.global.subnet_prefix; //ROCE
+ 	
+		hrd_publish(qp_attr.name, &qp_attr, sizeof(struct hrd_qp_attr));
+
+
+	#else
+		struct hrd_qp_attr qp_attr;
+		memcpy(qp_attr.name, qp_name, len);
+		qp_attr.name[len] = 0;	/* Add the null terminator */
+		qp_attr.lid = hrd_get_local_lid(cb->dgram_qp[n]->context, cb->dev_port_id);
+		qp_attr.qpn = cb->dgram_qp[n]->qp_num;
 	
-	hrd_publish(qp_attr.name, &qp_attr, sizeof(struct hrd_qp_attr));
+		hrd_publish(qp_attr.name, &qp_attr, sizeof(struct hrd_qp_attr));
+	#endif
 }
 
 struct hrd_qp_attr* hrd_get_published_qp(const char *qp_name)
