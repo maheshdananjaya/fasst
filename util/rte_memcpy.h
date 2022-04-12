@@ -42,7 +42,14 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <emmintrin.h>
+
+#ifdef AARCH64
+	#include <arm_neon.h>
+	typedef float32x4_t __m128i;
+#else 
+	#include <emmintrin.h>
+#endif
+	
 
 #ifdef __cplusplus
 extern "C" {
