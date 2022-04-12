@@ -24,7 +24,7 @@
  *   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
  *   OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
  *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,t
  *   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
  *   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
@@ -45,6 +45,7 @@
 
 #ifdef AARCH64
 	#include <arm_neon.h>
+	typedef float32x4_t __m128i;
 #else 
 	#include <emmintrin.h>
 #endif
@@ -55,7 +56,8 @@ extern "C" {
 #endif
 
 #ifdef __INTEL_COMPILER
-#pragma warning(disable:593) /* Stop unused variable warning (reg_a etc). */
+#pragma warning(disable:593) /* Stop unused variab
+le warning (reg_a etc). */
 #endif
 
 #define forceinline inline __attribute__((always_inline))
