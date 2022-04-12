@@ -32,6 +32,9 @@
 
 #define HRD_CONNECT_IB_ATOMICS 0
 
+//#define ROCE
+#define IB_PHYS_PORT 1 // for ROCE
+
 /*
  * Small max_inline_data reduces the QP's max WQE size, which reduces the
  * DMA size in doorbell method of WQE fetch.
@@ -79,6 +82,11 @@ struct hrd_qp_attr {
 	
 	int lid;
 	int qpn;
+	
+	#ifdef ROCE
+			uint64_t gid_global_interface_id;
+			uint64_t gid_global_subnet_prefix; 
+	#endif
 };
 
 struct hrd_ctrl_blk {
