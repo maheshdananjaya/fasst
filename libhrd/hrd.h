@@ -32,7 +32,7 @@
 
 #define HRD_CONNECT_IB_ATOMICS 0
 
-//#define ROCE
+#define ROCE
 #define IB_PHYS_PORT 1 // for ROCE
 
 /*
