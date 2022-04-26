@@ -1,0 +1,13 @@
+
+
+The often referenced gcc documentation for always_inline is incomplete.
+
+always_inline attribute makes gcc compiler:
+
+    Ignore -fno-inline (this is what the documentation says).
+    Ignore the inlining limits hence inlining the function regardless. It also inlines functions with alloca calls, which inline keyword never does.
+    Not produce an external definition of a function with external linkage if marked with always_inline.
+
+The source of the above information is gcc source code, and, hence, is subject to change with no warning.
+
+An interesting bechmark: always_inline performance.
