@@ -49,7 +49,6 @@
 	#include <emmintrin.h>
 #endif
 
-
 // #ifdef __cplusplus
 // extern "C" {
 // #endif
@@ -61,6 +60,8 @@ namespace util {
 #pragma warning(disable:593) /* Stop unused variable warning (reg_a etc). */
 #endif
 
+#define __rte_always_inline inline __attribute__((always_inline))
+
 /**
  * Copy 16 bytes from one location to another using optimised SSE
  * instructions. The locations should not overlap.
@@ -70,6 +71,18 @@ namespace util {
  * @param src
  *   Pointer to the source data.
  */
+#ifdef AARCH64
+
+static __rte_always_inline
+void rte_mov16(uint8_t *dst, const uint8_t *src)
+{
+	__uint128_t *dst128 = (__uint128_t *)dst;
+	const __uint128_t *src128 = (const __uint128_t *)src;
+	*dst128 = *src128;
+}
+
+#else 
+
 static inline void
 rte_mov16(uint8_t *dst, const uint8_t *src)
 {
@@ -83,6 +96,7 @@ rte_mov16(uint8_t *dst, const uint8_t *src)
 		: "memory"
 	);
 }
+#endif
 
 /**
  * Copy 32 bytes from one location to another using optimised SSE
@@ -93,6 +107,20 @@ rte_mov16(uint8_t *dst, const uint8_t *src)
  * @param src
  *   Pointer to the source data.
  */
+
+#ifdef AARCH64
+static __rte_always_inline
+void rte_mov32(uint8_t *dst, const uint8_t *src)
+{
+	__uint128_t *dst128 = (__uint128_t *)dst;
+	const __uint128_t *src128 = (const __uint128_t *)src;
+	const __uint128_t x0 = src128[0], x1 = src128[1];
+	dst128[0] = x0;
+	dst128[1] = x1;
+}
+
+#else
+
 static inline void
 rte_mov32(uint8_t *dst, const uint8_t *src)
 {
@@ -109,7 +137,7 @@ rte_mov32(uint8_t *dst, const uint8_t *src)
 		: "memory"
 	);
 }
-
+#endif
 /**
  * Copy 48 bytes from one location to another using optimised SSE
  * instructions. The locations should not overlap.
@@ -119,6 +147,20 @@ rte_mov32(uint8_t *dst, const uint8_t *src)
  * @param src
  *   Pointer to the source data.
  */
+
+#ifdef AARCH64
+static __rte_always_inline
+void rte_mov48(uint8_t *dst, const uint8_t *src)
+{
+	__uint128_t *dst128 = (__uint128_t *)dst;
+	const __uint128_t *src128 = (const __uint128_t *)src;
+	const __uint128_t x0 = src128[0], x1 = src128[1], x2 = src128[2];
+	dst128[0] = x0;
+	dst128[1] = x1;
+	dst128[2] = x2;
+}
+
+#else
 static inline void
 rte_mov48(uint8_t *dst, const uint8_t *src)
 {
@@ -138,6 +180,7 @@ rte_mov48(uint8_t *dst, const uint8_t *src)
 		: "memory"
 	);
 }
+#endif
 
 /**
  * Copy 64 bytes from one location to another using optimised SSE
@@ -148,6 +191,21 @@ rte_mov48(uint8_t *dst, const uint8_t *src)
  * @param src
  *   Pointer to the source data.
  */
+#ifdef AARCH64
+static __rte_always_inline
+void rte_mov64(uint8_t *dst, const uint8_t *src)
+{
+	__uint128_t *dst128 = (__uint128_t *)dst;
+	const __uint128_t *src128 = (const __uint128_t *)src;
+	const __uint128_t
+		x0 = src128[0], x1 = src128[1], x2 = src128[2], x3 = src128[3];
+	dst128[0] = x0;
+	dst128[1] = x1;
+	dst128[2] = x2;
+	dst128[3] = x3;
+}
+
+#else
 static inline void
 rte_mov64(uint8_t *dst, const uint8_t *src)
 {
@@ -170,7 +228,7 @@ rte_mov64(uint8_t *dst, const uint8_t *src)
 		: "memory"
 	);
 }
-
+#endif
 /**
  * Copy 128 bytes from one location to another using optimised SSE
  * instructions. The locations should not overlap.
@@ -180,6 +238,30 @@ rte_mov64(uint8_t *dst, const uint8_t *src)
  * @param src
  *   Pointer to the source data.
  */
+#ifdef AARCH64
+static __rte_always_inline
+void rte_mov128(uint8_t *dst, const uint8_t *src)
+{
+	__uint128_t *dst128 = (__uint128_t *)dst;
+	const __uint128_t *src128 = (const __uint128_t *)src;
+	/* Keep below declaration & copy sequence for optimized instructions */
+	const __uint128_t
+		x0 = src128[0], x1 = src128[1], x2 = src128[2], x3 = src128[3];
+	dst128[0] = x0;
+	__uint128_t x4 = src128[4];
+	dst128[1] = x1;
+	__uint128_t x5 = src128[5];
+	dst128[2] = x2;
+	__uint128_t x6 = src128[6];
+	dst128[3] = x3;
+	__uint128_t x7 = src128[7];
+	dst128[4] = x4;
+	dst128[5] = x5;
+	dst128[6] = x6;
+	dst128[7] = x7;
+}
+
+#else
 static inline void
 rte_mov128(uint8_t *dst, const uint8_t *src)
 {
@@ -214,6 +296,7 @@ rte_mov128(uint8_t *dst, const uint8_t *src)
 		: "memory"
 	);
 }
+#endif
 
 #ifdef __INTEL_COMPILER
 #pragma warning(enable:593)
@@ -228,12 +311,23 @@ rte_mov128(uint8_t *dst, const uint8_t *src)
  * @param src
  *   Pointer to the source data.
  */
+#ifdef AARCH64
+static __rte_always_inline
+void rte_mov256(uint8_t *dst, const uint8_t *src)
+{
+	rte_mov128(dst, src);
+	rte_mov128(dst + 128, src + 128);
+}
+
+#else
 static inline void
 rte_mov256(uint8_t *dst, const uint8_t *src)
 {
 	rte_mov128(dst, src);
 	rte_mov128(dst + 128, src + 128);
 }
+#endif
+
 
 /**
  * Copy bytes from one location to another. The locations must not overlap.
@@ -388,3 +482,4 @@ rte_memcpy_func(void *dst, const void *src, size_t n)
 // #endif
 
 #endif /* _MICA_UTIL_RTE_MEMCPY_RTE_MEMCPY_H_ */
+
