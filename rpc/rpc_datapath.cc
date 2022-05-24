@@ -347,7 +347,7 @@ coro_id_t* Rpc::poll_comps()
 		uint32_t _is_req = wc_imm.is_req;
 		uint32_t _num_reqs = wc_imm.num_reqs;
 
-		if(_is_req == 1) {
+		if(_is_req >= 1) { //prefeching DAM included
 			prefetch_mica(wc_buf, _num_reqs);
 		}
 	}
