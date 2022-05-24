@@ -15,7 +15,7 @@ INC	:= -I ${HOTS_HOME} -I ${MICA_HOME} -I/usr/local/include
 #DEBUG := -DNDEBUG
 CPPFLAGS := ${ENABLE_DGB} ${LTO} -O3 ${DEBUG} -std=c++11 ${INC} -Wall -Werror \
 	-Wno-unused-result -Wno-unused-value -Wno-unused-function \
-	-Winline -faligned-new
+	-Winline -faligned-new -DAARCH64 -march=armv8-a
 
 
 LDFLAGS := ${ENABLE_DGB} ${LTO} -O3 -libverbs -lrt -pthread -lmemcached -lnuma \
